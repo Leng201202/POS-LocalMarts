@@ -1,3 +1,19 @@
 spring:
   application:
     name: pos
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:${user.home}/LocalMartPOS/database/localmart-pos.db
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  thymeleaf:
+      cache: false
+server:
+  port: 8080
