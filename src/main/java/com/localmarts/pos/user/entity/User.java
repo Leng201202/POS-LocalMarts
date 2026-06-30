@@ -1,4 +1,4 @@
-package com.localmarts.pos.user.Entity;
+package com.localmarts.pos.user.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
