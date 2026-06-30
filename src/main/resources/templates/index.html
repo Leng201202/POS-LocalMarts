@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container vh-100 d-flex align-items-center justify-content-center">
+
+    <div class="row w-100 justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="text-center mb-5">
+                <h1 class="fw-bold">LocalMart POS</h1>
+                <p class="text-muted fs-5">
+                    Offline Point of Sale System
+                </p>
+                <p class="text-secondary">
+                    Select your workspace to continue
+                </p>
+            </div>
+
+            <div class="row g-4">
+
+                <!-- Admin -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+
+                        <div class="card-body text-center p-5">
+
+                            <i class="bi bi-person-workspace display-2 text-primary"></i>
+
+                            <h3 class="mt-4">
+                                Administrator
+                            </h3>
+
+                            <p class="text-muted mt-3">
+                                Manage products, inventory, users, reports,
+                                audit logs and system configuration.
+                            </p>
+
+                            <a href="/admin"
+                               class="btn btn-primary btn-lg w-100 mt-4">
+                                Open Admin Dashboard
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Cashier -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 h-100">
+
+                        <div class="card-body text-center p-5">
+
+                            <i class="bi bi-cart-check display-2 text-success"></i>
+
+                            <h3 class="mt-4">
+                                Cashier
+                            </h3>
+
+                            <p class="text-muted mt-3">
+                                Process sales, manage customers,
+                                receive payments and print receipts.
+                            </p>
+
+                            <a href="/cashier"
+                               class="btn btn-success btn-lg w-100 mt-4">
+                                Open Cashier Dashboard
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-5">
+                <small class="text-muted">
+                    LocalMart POS • Version 1.0
+                </small>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
