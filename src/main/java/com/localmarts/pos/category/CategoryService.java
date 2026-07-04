@@ -3,6 +3,7 @@ package com.localmarts.pos.category;
 import com.localmarts.pos.category.entity.Category;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,6 +41,14 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
-
+    public Long softDelete(Long id,Long deletedBy){
+        Category category=categoryRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(()-> new RuntimeException("Category not found"));
+        category.setDeletedBy(deletedBy);
+        category.setDeletedAt(LocalDateTime.now());
+        category.setActive(false);
+        categoryRepository.save(category);
+        return category.getId();
+    }
 
 }

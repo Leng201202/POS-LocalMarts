@@ -20,6 +20,8 @@ public class CategoryController {
     @GetMapping("/")
     public String list(Model model){
         model.addAttribute("categories",categoryService.findAll());
-        return "index";
+        return "admin/category/index";
     }
+
+
 }
