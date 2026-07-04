@@ -26,7 +26,7 @@ public class CategoryService {
         if(categoryRepository.existsByNameAndDeletedAtIsNull(category.getName())){
             throw new RuntimeException("Category name already exit");
         }
-        category.setCreated_by(created_by);
+        category.setCreatedBy(created_by);
         category.setActive(true);
         return categoryRepository.save(category);
     }
@@ -39,5 +39,7 @@ public class CategoryService {
         category.setUpdatedBy(updatedBy);
         return categoryRepository.save(category);
     }
+
+
 
 }
