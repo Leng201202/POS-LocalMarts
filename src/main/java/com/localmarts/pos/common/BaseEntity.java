@@ -17,8 +17,6 @@ public abstract class BaseEntity {
     @Column(nullable = false)
     private Boolean active=true;
 
-    @Column(nullable = false)
-    private Boolean deleted=false;
 
     @CreationTimestamp
     @Column(nullable = false,updatable = false)
@@ -27,7 +25,7 @@ public abstract class BaseEntity {
     @UpdateTimestamp
     private LocalDateTime updated_at;
 
-    private LocalDateTime deleted_at;
+    private LocalDateTime deletedAt;
 
     @Column(nullable = false,updatable = false)
     private Long created_by;
