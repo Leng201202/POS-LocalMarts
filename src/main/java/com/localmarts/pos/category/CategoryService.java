@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CategoryService {
@@ -34,6 +33,11 @@ public class CategoryService {
     public Category update(Long id, Category updatedCategory, Long updatedBy) {
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        if (!category.getName().equalsIgnoreCase(updatedCategory.getName())
+                && categoryRepository.existsByNameAndDeletedAtIsNull(updatedCategory.getName())) {
+            throw new RuntimeException("Category name already exists");
+        }
         category.setName(updatedCategory.getName());
         category.setDescription(updatedCategory.getDescription());
         category.setActive(updatedCategory.getActive());
