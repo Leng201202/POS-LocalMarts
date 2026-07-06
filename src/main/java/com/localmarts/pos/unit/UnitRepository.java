@@ -1,5 +1,6 @@
 package com.localmarts.pos.unit;
 
+import com.localmarts.pos.unit.entity.Unit;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

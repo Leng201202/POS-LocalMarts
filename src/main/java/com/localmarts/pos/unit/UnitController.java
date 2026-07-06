@@ -1,12 +1,15 @@
 package com.localmarts.pos.unit;
 
+import com.localmarts.pos.unit.entity.Unit;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@RequestMapping("/admin/unit")
+@RequestMapping("unit")
 public class UnitController {
+
+    private static final Long CURRENT_USER_ID = 1L;
 
     private final UnitService unitService;
 

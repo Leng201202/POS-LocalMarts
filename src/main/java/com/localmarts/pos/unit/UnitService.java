@@ -1,5 +1,6 @@
 package com.localmarts.pos.unit;
 
+import com.localmarts.pos.unit.entity.Unit;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
