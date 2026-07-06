@@ -30,7 +30,7 @@ public class CategoryService {
         category.setActive(true);
         return categoryRepository.save(category);
     }
-    public Category update(Long id, Category updatedCategory, Long updatedBy) {
+    public void update(Long id, Category updatedCategory, Long updatedBy) {
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
@@ -42,17 +42,16 @@ public class CategoryService {
         category.setDescription(updatedCategory.getDescription());
         category.setActive(updatedCategory.getActive());
         category.setUpdatedBy(updatedBy);
-        return categoryRepository.save(category);
+        categoryRepository.save(category);
     }
 
-    public Long softDelete(Long id,Long deletedBy){
+    public void softDelete(Long id, Long deletedBy){
         Category category=categoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new RuntimeException("Category not found"));
         category.setDeletedBy(deletedBy);
         category.setDeletedAt(LocalDateTime.now());
         category.setActive(false);
         categoryRepository.save(category);
-        return category.getId();
     }
 
 }

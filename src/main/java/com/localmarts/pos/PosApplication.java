@@ -13,6 +13,11 @@ public class PosApplication {
 	public static void main(String[] args) throws IOException {
 		createDirectory();
         SpringApplication.run(PosApplication.class, args);
+        try {
+            new ProcessBuilder("open", "http://localhost:8080").start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
     private static void createDirectory() throws IOException {
