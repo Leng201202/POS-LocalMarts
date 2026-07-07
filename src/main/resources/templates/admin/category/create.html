@@ -47,7 +47,7 @@
             <div th:if="${error}" class="alert alert-danger">
                 <span th:text="${error}"></span>
             </div>
-            <form th:action="@{create}"
+            <form th:action="@{/category/create}"
                   th:object="${category}"
                   method="post">
 

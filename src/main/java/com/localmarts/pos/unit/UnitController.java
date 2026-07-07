@@ -20,7 +20,7 @@ public class UnitController {
     // Show unit list
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("units", unitService.findAllActive());
+        model.addAttribute("units", unitService.findAll());
         return "admin/unit/index";
     }
 
@@ -32,24 +32,45 @@ public class UnitController {
     }
 
     // Save unit
-    @PostMapping("/save")
-    public String save(@ModelAttribute Unit unit) {
-        unitService.save(unit);
-        return "redirect:/admin/unit";
+    @PostMapping("/create")
+    public String save(@ModelAttribute Unit unit, Model model) {
+        try{
+            unitService.create(unit, CURRENT_USER_ID);
+            return "redirect:/unit";
+        }catch (RuntimeException e){
+            model.addAttribute("unit",unit);
+            model.addAttribute("error",e.getMessage());
+            return "admin/unit/create";
+        }
+    }
+
+    // Show edit unit page
+    @GetMapping("/edit/{id}")
+    public String edit(@PathVariable Long id, Model model) {
+        model.addAttribute("unit", unitService.findById(id));
+        return "admin/unit/edit";
     }
 
     // Update unit
-    @PostMapping("/update/{id}")
+    @PostMapping("/edit/{id}")
     public String update(@PathVariable Long id,
-                         @ModelAttribute Unit unit) {
-        unitService.update(id, unit);
-        return "redirect:/admin/unit";
+                         @ModelAttribute Unit unit,
+                         Model model) {
+        try {
+            unitService.update(id, unit, CURRENT_USER_ID);
+            return "redirect:/unit";
+        } catch (RuntimeException e) {
+            unit.setId(id);
+            model.addAttribute("unit", unit);
+            model.addAttribute("error", e.getMessage());
+            return "admin/unit/edit";
+        }
     }
 
     // Soft delete unit
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable Long id) {
-        unitService.softDelete(id);
-        return "redirect:/admin/unit";
+        unitService.softDelete(id, CURRENT_USER_ID);
+        return "redirect:/unit";
     }
 }

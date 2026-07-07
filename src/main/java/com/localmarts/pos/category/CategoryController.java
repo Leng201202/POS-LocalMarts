@@ -12,7 +12,6 @@ public class CategoryController {
     private static final Long CURRENT_USER_ID = 1L;
     @Autowired
     private final CategoryService categoryService;
-
     public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }

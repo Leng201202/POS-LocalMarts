@@ -8,9 +8,11 @@ import java.util.Optional;
 
 public interface UnitRepository extends JpaRepository<Unit, Long> {
 
-    List<Unit> findByActiveTrueOrderByNameAsc();
+    List<Unit> findByDeletedAtIsNullOrderByNameAsc();
 
-    Optional<Unit> findByNameIgnoreCase(String name);
+    Optional<Unit> findByIdAndDeletedAtIsNull(Long id);
 
-    Optional<Unit> findByAbbreviationIgnoreCase(String abbreviation);
+    boolean existsByNameIgnoreCaseAndDeletedAtIsNull(String name);
+
+    boolean existsByAbbreviationIgnoreCaseAndDeletedAtIsNull(String abbreviation);
 }
