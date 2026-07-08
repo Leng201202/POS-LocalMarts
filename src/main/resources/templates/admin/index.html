@@ -13,14 +13,16 @@
 
     <nav class="navbar navbar-expand-lg bg-white shadow-sm">
         <div class="container-fluid px-4">
-            <a class="navbar-brand fw-bold" href="/dashboard/admin">
+            <a class="navbar-brand fw-bold" th:href="@{/admin}">
                 LocalMart POS
             </a>
 
             <div class="ms-auto">
-                <a href="/" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-house"></i> Home
-                </a>
+                <form th:action="@{/logout}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
             </div>
         </div>
     </nav>
@@ -33,25 +35,26 @@
                 <h6 class="text-muted text-uppercase mb-3">Admin Menu</h6>
 
                 <div class="list-group list-group-flush">
-                    <a href="/dashboard/admin" class="list-group-item list-group-item-action active">
+                    <a th:href="@{/admin}" class="list-group-item list-group-item-action active">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>
-                    <a href="/common/developing" class="list-group-item list-group-item-action">
+                    <a th:href="@{/users}" class="list-group-item list-group-item-action">
                         <i class="bi bi-people me-2"></i> User Management
                     </a>
-                    <a href="/common/developing" class="list-group-item list-group-item-action">
+                    <a href="/products" class="list-group-item list-group-item-action">
                         <i class="bi bi-box-seam me-2"></i> Products
                     </a>
-                    <a href="/category" class="list-group-item list-group-item-action">
-                        <i class="bi bi-tags me-2"></i> Categories
-                    </a>
-                    <a href="common/404" class="list-group-item list-group-item-action">
-                        <i class="bi bi-rulers me-2"></i> Units
-                    </a>
-                    <a href="/common/404" class="list-group-item list-group-item-action">
+                    <a th:href="@{/admin/category}" class="list-group-item list-group-item-action">
+					    <i class="bi bi-tags me-2"></i> Categories
+					</a>
+					
+					<a th:href="@{/admin/unit}" class="list-group-item list-group-item-action">
+					    <i class="bi bi-rulers me-2"></i> Units
+					</a>
+                    <a href="/inventory" class="list-group-item list-group-item-action">
                         <i class="bi bi-clipboard-data me-2"></i> Inventory
                     </a>
-                    <a href="/common/500" class="list-group-item list-group-item-action">
+                    <a href="/audit-logs" class="list-group-item list-group-item-action">
                         <i class="bi bi-clock-history me-2"></i> Audit Logs
                     </a>
                 </div>
@@ -159,24 +162,24 @@
                             </div>
 
                             <div class="col-md-4">
-                                <a href="/users/create" class="btn btn-outline-secondary w-100 py-3">
+                                <a th:href="@{/users/create}" class="btn btn-outline-secondary w-100 py-3">
                                     <i class="bi bi-person-plus me-2"></i>
                                     Add User
                                 </a>
                             </div>
 
                             <div class="col-md-4">
-                                <a href="/category/create" class="btn btn-outline-info w-100 py-3">
-                                    <i class="bi bi-tag me-2"></i>
-                                    Add Category
-                                </a>
+		                        <a th:href="@{/admin/category/create}" class="btn btn-outline-info w-100 py-3">
+									<i class="bi bi-tag me-2"></i>
+									Add Category
+								</a>
                             </div>
 
                             <div class="col-md-4">
-                                <a href="/units/create" class="btn btn-outline-dark w-100 py-3">
-                                    <i class="bi bi-rulers me-2"></i>
-                                    Add Unit
-                                </a>
+  								<a th:href="@{/admin/unit/create}" class="btn btn-outline-dark w-100 py-3">
+									<i class="bi bi-rulers me-2"></i>
+									Add Unit
+								</a>                      
                             </div>
 
                         </div>
