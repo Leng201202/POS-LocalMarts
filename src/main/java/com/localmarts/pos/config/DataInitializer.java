@@ -1,7 +1,7 @@
 package com.localmarts.pos.config;
 
-import com.localmarts.pos.user.Role;
-import com.localmarts.pos.user.User;
+import com.localmarts.pos.user.entity.Role;
+import com.localmarts.pos.user.entity.User;
 import com.localmarts.pos.user.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;

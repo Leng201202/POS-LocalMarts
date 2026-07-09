@@ -1,5 +1,7 @@
 package com.localmarts.pos.user;
 
+import com.localmarts.pos.user.entity.Role;
+import com.localmarts.pos.user.entity.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,4 +1,4 @@
-package com.localmarts.pos.user;
+package com.localmarts.pos.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,5 +1,6 @@
 package com.localmarts.pos.user;
 
+import com.localmarts.pos.user.entity.User;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

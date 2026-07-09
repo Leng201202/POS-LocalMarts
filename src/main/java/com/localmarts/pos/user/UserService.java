@@ -1,5 +1,6 @@
 package com.localmarts.pos.user;
 
+import com.localmarts.pos.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
