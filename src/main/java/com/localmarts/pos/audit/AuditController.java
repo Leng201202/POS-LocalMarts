@@ -21,13 +21,6 @@ public class AuditController {
     @GetMapping()
     public String findAll(Model model){
         List<Audit> audits=auditService.findAll();
-
-        for (Audit audit : audits) {
-            System.out.println(
-                    "Audit " + audit.getId() +
-                            " details = " + audit.getDetails().size()
-            );
-        }
         model.addAttribute("audits",audits);
         return "admin/audit/index";
     }

@@ -22,8 +22,10 @@ public class SecurityConfig {
                                 "/admin", "/admin/**",
                                 "/users", "/users/**",
                                 "/products", "/products/**",
+                                "/unit", "/unit/**",
+                                "/category", "/category/**",
                                 "/inventory", "/inventory/**",
-                                "/audit-logs", "/audit-logs/**"
+                                "/audit", "/audit/**"
                         ).hasRole("ADMIN")
                         .requestMatchers("/cashier", "/cashier/**").hasAnyRole("ADMIN", "CASHIER")
                         .anyRequest().authenticated()

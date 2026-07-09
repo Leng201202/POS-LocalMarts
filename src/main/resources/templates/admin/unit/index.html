@@ -104,9 +104,14 @@
                                 data-bs-toggle="modal"
                                 data-bs-target="#deleteModal"
                                 th:data-id="${unit.id}"
+                                th:data-form-id="'deleteForm-' + ${unit.id}"
                                 th:data-name="${unit.name}">
                             <i class="bi bi-trash"></i>
                         </button>
+                        <form th:id="'deleteForm-' + ${unit.id}"
+                              th:action="@{/unit/delete/{id}(id=${unit.id})}"
+                              method="post"
+                              class="d-none"></form>
                     </td>
                 </tr>
                 </tbody>
@@ -144,11 +149,11 @@
                         data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <form id="deleteForm" method="post">
-                    <button class="btn btn-danger">
-                        Delete
-                    </button>
-                </form>
+                <button id="confirmDeleteButton"
+                        type="submit"
+                        class="btn btn-danger">
+                    Delete
+                </button>
             </div>
         </div>
     </div>
@@ -159,11 +164,10 @@
     const deleteModal = document.getElementById('deleteModal');
     deleteModal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
-        const id = button.getAttribute('data-id');
+        const formId = button.getAttribute('data-form-id');
         const name = button.getAttribute('data-name');
         document.getElementById('unitName').textContent = name;
-        document.getElementById('deleteForm').action =
-            '/unit/delete/' + id;
+        document.getElementById('confirmDeleteButton').setAttribute('form', formId);
     });
 </script>
 </html>
