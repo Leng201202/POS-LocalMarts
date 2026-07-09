@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LocalMart POS</title>
+    <title>Login | LocalMart POS</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -11,90 +11,59 @@
 
 <body class="bg-light">
 
-<div class="container vh-100 d-flex align-items-center justify-content-center">
-
+<div class="container min-vh-100 d-flex align-items-center justify-content-center">
     <div class="row w-100 justify-content-center">
-
-        <div class="col-lg-8">
-
-            <div class="text-center mb-5">
-                <h1 class="fw-bold">LocalMart POS</h1>
-                <p class="text-muted fs-5">
-                    Offline Point of Sale System
-                </p>
-                <p class="text-secondary">
-                    Select your workspace to continue
-                </p>
+        <div class="col-md-7 col-lg-5 col-xl-4">
+            <div class="text-center mb-4">
+                <i class="bi bi-shop display-3 text-primary"></i>
+                <h1 class="fw-bold mt-3 mb-1">LocalMart POS</h1>
+                <p class="text-muted mb-0">Sign in to continue</p>
             </div>
 
-            <div class="row g-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div th:if="${param.error}" class="alert alert-danger">
+                        Invalid username or password.
+                    </div>
 
-                <!-- Admin -->
-                <div class="col-md-6">
-                    <div class="card shadow-sm border-0 h-100">
+                    <div th:if="${param.logout}" class="alert alert-success">
+                        You have been signed out.
+                    </div>
 
-                        <div class="card-body text-center p-5">
-
-                            <i class="bi bi-person-workspace display-2 text-primary"></i>
-
-                            <h3 class="mt-4">
-                                Administrator
-                            </h3>
-
-                            <p class="text-muted mt-3">
-                                Manage products, inventory, users, reports,
-                                audit logs and system configuration.
-                            </p>
-
-                            <a href="/admin"
-                               class="btn btn-primary btn-lg w-100 mt-4">
-                                Open Admin Dashboard
-                            </a>
-
+                    <form th:action="@{/login}" method="post">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text"
+                                   id="username"
+                                   name="username"
+                                   class="form-control"
+                                   autocomplete="username"
+                                   required
+                                   autofocus>
                         </div>
 
-                    </div>
-                </div>
-
-                <!-- Cashier -->
-                <div class="col-md-6">
-                    <div class="card shadow-sm border-0 h-100">
-
-                        <div class="card-body text-center p-5">
-
-                            <i class="bi bi-cart-check display-2 text-success"></i>
-
-                            <h3 class="mt-4">
-                                Cashier
-                            </h3>
-
-                            <p class="text-muted mt-3">
-                                Process sales, manage customers,
-                                receive payments and print receipts.
-                            </p>
-
-                            <a href="/cashier"
-                               class="btn btn-success btn-lg w-100 mt-4">
-                                Open Cashier Dashboard
-                            </a>
-
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password"
+                                   id="password"
+                                   name="password"
+                                   class="form-control"
+                                   autocomplete="current-password"
+                                   required>
                         </div>
 
-                    </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </button>
+                    </form>
                 </div>
-
             </div>
 
-            <div class="text-center mt-5">
-                <small class="text-muted">
-                    LocalMart POS • Version 1.0
-                </small>
+            <div class="text-center mt-4">
+                <small class="text-muted">Default users: admin/admin123 or cashier/cashier123</small>
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
