@@ -18,21 +18,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping()
-    public String home() {
-        return "index";
-    }
-
-    @GetMapping("/admin")
-    public String adminHome() {
-        return "admin/index";
-    }
-
-    @GetMapping("/cashier")
-    public String cashierHome() {
-        return "cashier/index";
-    }
-
     @GetMapping("/users")
     public String users(Model model) {
         model.addAttribute("users", userService.findAllActive());

@@ -1,20 +1,23 @@
-//package com.localmarts.pos.common.controller;
-//
-//import org.springframework.stereotype.Controller;
-//import org.springframework.web.bind.annotation.GetMapping;
-//
-//@Controller
-//public class HomeController {
-//    @GetMapping("/")
-//    public String home() {
-//        return "index";
-//    }
-//    @GetMapping("/admin")
-//    public String admin() {
-//        return "admin/index";
-//    }
-//    @GetMapping("/cashier")
-//    public String cashier() {
-//        return "cashier/index";
-//    }
-//}
+package com.localmarts.pos.common.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class HomeController {
+
+    @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+
+    @GetMapping("/admin")
+    public String admin() {
+        return "admin/index";
+    }
+
+    @GetMapping("/cashier")
+    public String cashier() {
+        return "cashier/index";
+    }
+}

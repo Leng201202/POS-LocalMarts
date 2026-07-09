@@ -28,6 +28,7 @@ public class UserService {
     public void save(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setActive(true);
+        user.setCreatedBy(0L);
         userRepository.save(user);
     }
 
