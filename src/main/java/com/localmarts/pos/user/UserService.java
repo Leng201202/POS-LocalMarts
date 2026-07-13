@@ -17,9 +17,16 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    public List<User> findAll() {
+    return userRepository.findAll();
+}
     public List<User> findAllActive() {
         return userRepository.findByActiveTrueOrderByFullNameAsc();
     }
+
+    public List<User> findAllInactive() {
+    return userRepository.findByActiveFalseOrderByFullNameAsc();
+}
 
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
@@ -32,10 +39,38 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void deactivate(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setActive(false);
+    public void update(Long id, User formUser) {
+    User existingUser = findById(id);
+
+    existingUser.setFullName(formUser.getFullName());
+    existingUser.setUsername(formUser.getUsername());
+    existingUser.setRole(formUser.getRole());
+
+    userRepository.save(existingUser);
+}
+
+    public User findById(Long id) {
+    return userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+        public void activate(Long id) {
+        User user = findById(id);
+        user.setActive(true);
         userRepository.save(user);
     }
+
+
+    public void deactivate(Long id, String currentUsername) {
+    User targetUser = findById(id);
+
+    if (targetUser.getUsername().equals(currentUsername)) {
+        throw new IllegalStateException(
+                "You cannot deactivate your own account."
+        );
+    }
+
+    targetUser.setActive(false);
+    userRepository.save(targetUser);
+}
 }

@@ -32,20 +32,36 @@
             <p class="text-muted mb-0">Manage administrator and cashier access.</p>
         </div>
 
-        <a th:href="@{/users/create}" class="btn btn-primary">
-            <i class="bi bi-person-plus me-1"></i> Add User
-        </a>
+        <div class="d-flex gap-2">
+
+            <a th:href="@{/users/create}" class="btn btn-primary">
+                <i class="bi bi-person-plus me-1"></i> Add User
+            </a>
+        </div>
     </div>
+    
 
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white">
-            <h5 class="mb-0">Active Users</h5>
+            
+             
+            <div class="mt-2">
+                <a th:href="@{/users}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-person-check me-1"></i> Active Users
+                </a>
+            <a th:href="@{/users/inactive}" class="btn btn-outline-secondary">
+                <i class="bi bi-person-x me-1"></i> Inactive Users
+            </a>
         </div>
 
         <div class="card-body">
             <div th:if="${#lists.isEmpty(users)}" class="alert alert-info mb-0">
                 No active users found.
             </div>
+
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
             <div th:if="${!#lists.isEmpty(users)}" class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -56,6 +72,7 @@
                         <th>Username</th>
                         <th>Role</th>
                         <th>Created</th>
+                        <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
                     </thead>
@@ -69,17 +86,29 @@
                             <span class="badge text-bg-primary" th:text="${user.role}">ADMIN</span>
                         </td>
                         <td th:text="${#temporals.format(user.created_at, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</td>
+                        <td>
+                            <span th:if="${user.active}" class="badge text-bg-success">Active</span>
+                            <span th:if="${!user.active}" class="badge text-bg-danger">Inactive</span>
+                        </td>
+    
                         <td class="text-end">
-                            <form th:action="@{/users/deactivate/{id}(id=${user.id})}"
-                                  method="post"
-                                  class="d-inline">
+                            <a th:href="@{/users/edit/{id}(id=${user.id})}"
+                            class="btn btn-sm btn-outline-warning me-1">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+
+                            <form 
+                                th:action="@{/users/deactivate/{id}(id=${user.id})}"
+                                method="post"
+                                class="d-inline">
+
                                 <button type="submit"
                                         class="btn btn-sm btn-outline-danger"
                                         onclick="return confirm('Deactivate this user?')">
                                     <i class="bi bi-person-x"></i> Deactivate
                                 </button>
                             </form>
-                        </td>
+                        </td>               
                     </tr>
                     </tbody>
                 </table>
