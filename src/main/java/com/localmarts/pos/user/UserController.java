@@ -40,7 +40,10 @@ public class UserController {
     }
 
     @PostMapping("/users/save")
-    public String saveUser(@ModelAttribute User user, Model model) {
+    public String saveUser(@ModelAttribute User user,
+                        Model model,
+                        Authentication authentication) {
+
         if (userService.existsByUsername(user.getUsername())) {
             model.addAttribute("user", user);
             model.addAttribute("roles", Role.values());
@@ -48,7 +51,7 @@ public class UserController {
             return "admin/user/create";
         }
 
-        userService.save(user);
+        userService.save(user, authentication.getName());
         return "redirect:/users";
     }
 
@@ -61,17 +64,19 @@ public class UserController {
 
     @PostMapping("/users/update/{id}")
     public String updateUser(@PathVariable Long id,
-                            @ModelAttribute User user) {
-        userService.update(id, user);
+                            @ModelAttribute User user,
+                            Authentication authentication) {
+
+        userService.update(id, user, authentication.getName());
         return "redirect:/users";
     }
-
     @PostMapping("/users/activate/{id}")
-    public String activateUser(@PathVariable Long id) {
-        userService.activate(id);
-        return "redirect:/users";
-}
+    public String activateUser(@PathVariable Long id,
+                            Authentication authentication) {
 
+        userService.activate(id, authentication.getName());
+        return "redirect:/users/inactive";
+    }
     @PostMapping("/users/deactivate/{id}")
     public String deactivateUser(@PathVariable Long id,
                                 Authentication authentication,
