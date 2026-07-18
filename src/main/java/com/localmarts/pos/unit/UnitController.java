@@ -1,6 +1,9 @@
 package com.localmarts.pos.unit;
 
+import com.localmarts.pos.common.CurrentUserService;
 import com.localmarts.pos.unit.entity.Unit;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -9,12 +12,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("unit")
 public class UnitController {
 
-    private static final Long CURRENT_USER_ID = 1L;
-
     private final UnitService unitService;
+    private final CurrentUserService currentUserService;
 
-    public UnitController(UnitService unitService) {
+    public UnitController(UnitService unitService,
+        CurrentUserService currentUserService) {
         this.unitService = unitService;
+        this.currentUserService = currentUserService;
     }
 
     // Show unit list
@@ -33,9 +37,9 @@ public class UnitController {
 
     // Save unit
     @PostMapping("/create")
-    public String save(@ModelAttribute Unit unit, Model model) {
+    public String save(@ModelAttribute Unit unit, Authentication authentication, Model model) {
         try{
-            unitService.create(unit, CURRENT_USER_ID);
+            unitService.create(unit, currentUserService.getCurrentUserId(authentication));
             return "redirect:/unit";
         }catch (RuntimeException e){
             model.addAttribute("unit",unit);
@@ -55,9 +59,10 @@ public class UnitController {
     @PostMapping("/edit/{id}")
     public String update(@PathVariable Long id,
                          @ModelAttribute Unit unit,
+                         Authentication authentication,
                          Model model) {
         try {
-            unitService.update(id, unit, CURRENT_USER_ID);
+            unitService.update(id, unit, currentUserService.getCurrentUserId(authentication));
             return "redirect:/unit";
         } catch (RuntimeException e) {
             unit.setId(id);
@@ -69,8 +74,9 @@ public class UnitController {
 
     // Soft delete unit
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id) {
-        unitService.softDelete(id, CURRENT_USER_ID);
+    public String delete(@PathVariable Long id,
+         Authentication authentication) {
+        unitService.softDelete(id, currentUserService.getCurrentUserId(authentication));
         return "redirect:/unit";
     }
 }

@@ -13,6 +13,6 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
     Optional<Unit> findByIdAndDeletedAtIsNull(Long id);
 
     boolean existsByNameIgnoreCaseAndDeletedAtIsNull(String name);
-
+    
     boolean existsByAbbreviationIgnoreCaseAndDeletedAtIsNull(String abbreviation);
 }

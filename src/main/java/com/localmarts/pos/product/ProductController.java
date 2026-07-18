@@ -1,9 +1,12 @@
 package com.localmarts.pos.product;
 
 import com.localmarts.pos.category.CategoryService;
+import com.localmarts.pos.common.CurrentUserService;
 import com.localmarts.pos.product.entity.Product;
 import com.localmarts.pos.unit.UnitService;
 import com.localmarts.pos.user.UserRepository;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +18,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
+     private final CurrentUserService currentUserService;
     private final UnitService unitService;
     private final UserRepository userRepository;
 
@@ -22,13 +26,22 @@ public class ProductController {
             ProductService productService,
             CategoryService categoryService,
             UnitService unitService,
+            CurrentUserService currentUserService,
             UserRepository userRepository) {
 
         this.productService = productService;
         this.categoryService = categoryService;
         this.unitService = unitService;
+        this.currentUserService = currentUserService;
         this.userRepository = userRepository;
     }
+
+    private boolean isAdmin(Authentication authentication) {
+    return authentication.getAuthorities()
+            .stream()
+            .anyMatch(authority ->
+                    authority.getAuthority().equals("ROLE_ADMIN"));
+}
 
     @GetMapping
     public String list(Model model) {
@@ -51,7 +64,7 @@ public class ProductController {
             Model model) {
 
         try {
-            Long actorId = getCurrentUserId(authentication);
+            Long actorId = currentUserService.getCurrentUserId(authentication);
             productService.create(product, actorId);
 
             return "redirect:/products";
@@ -81,8 +94,15 @@ public class ProductController {
             Model model) {
 
         try {
-            Long actorId = getCurrentUserId(authentication);
-            productService.update(id, product, actorId);
+            Long actorId = currentUserService.getCurrentUserId(authentication);
+            boolean admin = currentUserService.isAdmin(authentication);
+
+            productService.update(
+                    id,
+                    product,
+                    actorId,
+                    admin
+            );
 
             return "redirect:/products";
 
@@ -97,12 +117,13 @@ public class ProductController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')") 
     @PostMapping("/delete/{id}")
     public String delete(
             @PathVariable Long id,
             Authentication authentication) {
 
-        Long actorId = getCurrentUserId(authentication);
+        Long actorId = currentUserService.getCurrentUserId(authentication);
         productService.softDelete(id, actorId);
 
         return "redirect:/products";
@@ -113,10 +134,5 @@ public class ProductController {
         model.addAttribute("units", unitService.findAll());
     }
 
-    private Long getCurrentUserId(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() ->
-                        new RuntimeException("Logged-in user not found"))
-                .getId();
-    }
+
 }

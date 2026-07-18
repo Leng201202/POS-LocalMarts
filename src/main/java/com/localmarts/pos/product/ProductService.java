@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ProductService {
@@ -106,15 +107,18 @@ public class ProductService {
         }
     }
 
- 
-
-    public void update(Long id, Product formProduct, Long updatedBy) {
+    public void update(
+        Long id,
+        Product formProduct,
+        Long updatedBy,
+        boolean isAdmin) {
 
         Product existingProduct = findById(id);
 
         try {
             boolean barcodeChanged =
-                    !java.util.Objects.equals(
+                    isAdmin
+                    && !Objects.equals(
                             existingProduct.getBarcode(),
                             formProduct.getBarcode()
                     );
@@ -126,31 +130,44 @@ public class ProductService {
                 throw new RuntimeException("Barcode already exists");
             }
 
-            List<AuditDetails> changes = new AuditChangeHelper()
-                    .addChange(
-                            "name",
-                            existingProduct.getName(),
-                            formProduct.getName()
-                    )
+        AuditChangeHelper changeHelper = new AuditChangeHelper()
+                .addChange(
+                        "name",
+                        existingProduct.getName(),
+                        formProduct.getName()
+                )
+                .addChange(
+                        "size",
+                        existingProduct.getSize(),
+                        formProduct.getSize()
+                )
+                .addChange(
+                        "manufacturingDate",
+                        existingProduct.getMfd(),
+                        formProduct.getMfd()
+                )
+                .addChange(
+                        "expiryDate",
+                        existingProduct.getExp(),
+                        formProduct.getExp()
+                )
+                .addChange(
+                        "category",
+                        getCategoryName(existingProduct),
+                        getCategoryName(formProduct)
+                )
+                .addChange(
+                        "unit",
+                        getUnitName(existingProduct),
+                        getUnitName(formProduct)
+                );
+
+                if (isAdmin) {
+                    changeHelper
                     .addChange(
                             "barcode",
                             existingProduct.getBarcode(),
                             formProduct.getBarcode()
-                    )
-                    .addChange(
-                            "size",
-                            existingProduct.getSize(),
-                            formProduct.getSize()
-                    )
-                    .addChange(
-                            "manufacturingDate",
-                            existingProduct.getMfd(),
-                            formProduct.getMfd()
-                    )
-                    .addChange(
-                            "expiryDate",
-                            existingProduct.getExp(),
-                            formProduct.getExp()
                     )
                     .addChange(
                             "costPrice",
@@ -166,30 +183,22 @@ public class ProductService {
                             "minimumStock",
                             existingProduct.getMinimumStock(),
                             formProduct.getMinimumStock()
-                    )
-                    .addChange(
-                            "category",
-                            getCategoryName(existingProduct),
-                            getCategoryName(formProduct)
-                    )
-                    .addChange(
-                            "unit",
-                            getUnitName(existingProduct),
-                            getUnitName(formProduct)
-                    )
-                    .build();
+                    );
+        }
+        List<AuditDetails> changes = changeHelper.build();
 
             existingProduct.setName(formProduct.getName());
-            existingProduct.setBarcode(formProduct.getBarcode());
             existingProduct.setSize(formProduct.getSize());
             existingProduct.setMfd(formProduct.getMfd());
             existingProduct.setExp(formProduct.getExp());
-            existingProduct.setCostPrice(formProduct.getCostPrice());
-            existingProduct.setSellingPrice(formProduct.getSellingPrice());
-            existingProduct.setMinimumStock(formProduct.getMinimumStock());
             existingProduct.setCategory(formProduct.getCategory());
             existingProduct.setUnit(formProduct.getUnit());
-            existingProduct.setUpdatedBy(updatedBy);
+            if (isAdmin) {
+                existingProduct.setBarcode(formProduct.getBarcode());
+                existingProduct.setCostPrice(formProduct.getCostPrice());
+                existingProduct.setSellingPrice(formProduct.getSellingPrice());
+                existingProduct.setMinimumStock(formProduct.getMinimumStock());
+            }
 
             Product savedProduct = productRepository.save(existingProduct);
 
