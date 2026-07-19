@@ -18,9 +18,8 @@ public class ProductController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
-     private final CurrentUserService currentUserService;
+    private final CurrentUserService currentUserService;
     private final UnitService unitService;
-    private final UserRepository userRepository;
 
     public ProductController(
             ProductService productService,
@@ -33,15 +32,7 @@ public class ProductController {
         this.categoryService = categoryService;
         this.unitService = unitService;
         this.currentUserService = currentUserService;
-        this.userRepository = userRepository;
     }
-
-    private boolean isAdmin(Authentication authentication) {
-    return authentication.getAuthorities()
-            .stream()
-            .anyMatch(authority ->
-                    authority.getAuthority().equals("ROLE_ADMIN"));
-}
 
     @GetMapping
     public String list(Model model) {

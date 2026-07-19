@@ -7,6 +7,7 @@ import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -166,6 +167,30 @@ public class UserService {
                 targetUser.getId(),
                 "Deactivated user account: " + targetUser.getUsername(),
                 details
+        );
+    }
+
+    @Transactional
+    public void resetPassword(
+            Long userId,
+            String newPassword,
+            Long actorId) {
+
+        User user = findById(userId);
+
+        user.setPassword(
+                passwordEncoder.encode(newPassword)
+        );
+
+        userRepository.save(user);
+
+        auditService.logSuccess(
+                actorId,
+                AuditAction.UPDATE,
+                "User",
+                userId,
+                "Password reset for user: "
+                        + user.getUsername()
         );
     }
 }

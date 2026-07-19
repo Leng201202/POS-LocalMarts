@@ -54,7 +54,22 @@
             </a>
         </div>
 
+
         <div class="card-body">
+
+            <div class="alert alert-success alert-dismissible fade show"
+                role="alert"
+                th:if="${successMessage}">
+
+                <span th:text="${successMessage}"></span>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+            
             <div th:if="${#lists.isEmpty(users)}" class="alert alert-info mb-0">
                 No active users found.
             </div>
@@ -94,7 +109,12 @@
                         <td class="text-end">
                             <a th:href="@{/users/edit/{id}(id=${user.id})}"
                             class="btn btn-sm btn-outline-warning me-1">
-                                <i class="bi bi-pencil-square"></i> Edit
+                                <i class="bi bi-pencil-square"></i> Edit 
+                            </a>
+
+                            <a th:href="@{/users/reset-password/{id}(id=${user.id})}"
+                            class="btn btn-warning btn-sm">
+                                Reset Password
                             </a>
 
                             <form 
