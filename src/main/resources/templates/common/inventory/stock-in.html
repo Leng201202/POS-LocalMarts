@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Batch Stock In | LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <style>
+        .upload-zone {
+            border: 2px dashed #adb5bd;
+            border-radius: 12px;
+            padding: 45px 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-over {
+            border-color: #0d6efd;
+            background-color: #eef5ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+        }
+
+        .file-info {
+            display: none;
+        }
+
+        .instruction-number {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: 700;
+        }
+
+        .table th,
+        .table td {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand fw-bold"
+           th:href="@{/admin}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+
+        <div class="ms-auto">
+            <a th:href="@{/inventory}"
+               class="btn btn-outline-secondary btn-sm">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Inventory
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+<main class="container py-5">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                Batch Stock In
+            </h2>
+
+            <p class="text-muted mb-0">
+                Upload an Excel or CSV file to add stock for multiple products.
+            </p>
+        </div>
+
+        <a th:href="@{/inventory/stock-in/template}"
+           class="btn btn-outline-primary">
+
+            <i class="bi bi-download me-1"></i>
+            Download Template
+        </a>
+
+    </div>
+
+    <!-- Success message -->
+    <div th:if="${successMessage}"
+         class="alert alert-success alert-dismissible fade show">
+
+        <i class="bi bi-check-circle me-1"></i>
+        <span th:text="${successMessage}"></span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+    </div>
+
+    <!-- Error message -->
+    <div th:if="${errorMessage}"
+         class="alert alert-danger alert-dismissible fade show">
+
+        <i class="bi bi-exclamation-circle me-1"></i>
+        <span th:text="${errorMessage}"></span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Upload form -->
+        <div class="col-12 col-lg-8">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>
+                        Upload Stock File
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form id="stockInForm"
+                          th:action="@{/inventory/stock-in}"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        <input id="stockFile"
+                               type="file"
+                               name="file"
+                               accept=".csv,.xlsx,.xls"
+                               hidden
+                               required>
+
+                        <label for="stockFile"
+                               id="uploadZone"
+                               class="upload-zone w-100">
+
+                            <i class="bi bi-cloud-arrow-up upload-icon text-primary"></i>
+
+                            <h5 class="fw-bold mt-3 mb-1">
+                                Drop your file here
+                            </h5>
+
+                            <p class="text-muted mb-2">
+                                or click to browse
+                            </p>
+
+                            <span class="badge text-bg-light border">
+                                CSV, XLSX or XLS
+                            </span>
+
+                            <p class="small text-muted mt-3 mb-0">
+                                Maximum file size: 10 MB
+                            </p>
+
+                        </label>
+
+                        <!-- Selected file -->
+                        <div id="fileInfo"
+                             class="file-info border rounded p-3 mt-3">
+
+                            <div class="d-flex justify-content-between align-items-center">
+
+                                <div class="d-flex align-items-center">
+
+                                    <div class="bg-success-subtle text-success rounded p-2 me-3">
+                                        <i class="bi bi-file-earmark-spreadsheet fs-4"></i>
+                                    </div>
+
+                                    <div>
+                                        <div id="fileName"
+                                             class="fw-semibold">
+                                            file.xlsx
+                                        </div>
+
+                                        <small id="fileSize"
+                                               class="text-muted">
+                                            0 KB
+                                        </small>
+                                    </div>
+
+                                </div>
+
+                                <button id="removeFileButton"
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger">
+
+                                    <i class="bi bi-trash"></i>
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="mt-4">
+
+                            <label for="defaultReason"
+                                   class="form-label fw-semibold">
+                                Default Reason
+                            </label>
+
+                            <input id="defaultReason"
+                                   name="defaultReason"
+                                   type="text"
+                                   maxlength="255"
+                                   class="form-control"
+                                   placeholder="Example: Supplier delivery INV-001">
+
+                            <div class="form-text">
+                                Used when a row does not contain its own reason.
+                            </div>
+
+                        </div>
+
+                        <div class="form-check mt-3">
+
+                            <input id="skipInvalidRows"
+                                   name="skipInvalidRows"
+                                   class="form-check-input"
+                                   type="checkbox"
+                                   value="true">
+
+                            <label for="skipInvalidRows"
+                                   class="form-check-label">
+                                Skip invalid rows and continue importing valid rows
+                            </label>
+
+                        </div>
+
+                        <div class="alert alert-warning mt-4 mb-0">
+
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+
+                            Stock will only be updated after every product and
+                            quantity has been validated.
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+
+                            <a th:href="@{/inventory}"
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+
+                            <button id="uploadButton"
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    disabled>
+
+                                <i class="bi bi-upload me-1"></i>
+                                Validate and Import
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Instructions -->
+        <div class="col-12 col-lg-4">
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        File Requirements
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="d-flex mb-3">
+
+                        <span class="instruction-number bg-primary-subtle text-primary me-3">
+                            1
+                        </span>
+
+                        <div>
+                            <div class="fw-semibold">
+                                Download the template
+                            </div>
+
+                            <small class="text-muted">
+                                Keep the original column headers unchanged.
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex mb-3">
+
+                        <span class="instruction-number bg-primary-subtle text-primary me-3">
+                            2
+                        </span>
+
+                        <div>
+                            <div class="fw-semibold">
+                                Enter product stock
+                            </div>
+
+                            <small class="text-muted">
+                                Use an existing product barcode and a positive quantity.
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="d-flex">
+
+                        <span class="instruction-number bg-primary-subtle text-primary me-3">
+                            3
+                        </span>
+
+                        <div>
+                            <div class="fw-semibold">
+                                Upload and validate
+                            </div>
+
+                            <small class="text-muted">
+                                Review any invalid rows before completing the import.
+                            </small>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        Required Columns
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="table-responsive">
+
+                        <table class="table table-sm align-middle mb-0">
+
+                            <thead class="table-light">
+                            <tr>
+                                <th>Column</th>
+                                <th>Required</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <code>barcode</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        Yes
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <code>quantity</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        Yes
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <code>reason</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        No
+                                    </span>
+                                </td>
+                            </tr>
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Import result preview -->
+    <div th:if="${importResult != null}"
+         class="card border-0 shadow-sm mt-4">
+
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+
+            <h5 class="mb-0">
+                Import Result
+            </h5>
+
+            <div class="d-flex gap-2">
+
+                <span class="badge bg-success"
+                      th:text="${importResult.successCount} + ' Successful'">
+                    0 Successful
+                </span>
+
+                <span class="badge bg-danger"
+                      th:text="${importResult.failedCount} + ' Failed'">
+                    0 Failed
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead class="table-light">
+                    <tr>
+                        <th>Row</th>
+                        <th>Barcode</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="row : ${importResult.rows}">
+
+                        <td th:text="${row.rowNumber}">
+                            1
+                        </td>
+
+                        <td th:text="${row.barcode}">
+                            885000000001
+                        </td>
+
+                        <td th:text="${row.productName ?: '-'}">
+                            Coca-Cola
+                        </td>
+
+                        <td th:text="${row.quantity}">
+                            20
+                        </td>
+
+                        <td>
+                            <span th:if="${row.success}"
+                                  class="badge bg-success">
+                                Valid
+                            </span>
+
+                            <span th:unless="${row.success}"
+                                  class="badge bg-danger">
+                                Invalid
+                            </span>
+                        </td>
+
+                        <td th:text="${row.message}">
+                            Ready to import
+                        </td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script th:src="@{/js/inventory/stock-in.js}"></script>
+
+</body>
+</html>

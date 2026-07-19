@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Stock Adjustment | LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <style>
+        .search-result {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .search-result:hover {
+            background-color: #f8f9fa;
+        }
+
+        .selected-product-card {
+            display: none;
+        }
+
+        .difference-positive {
+            color: #198754;
+            font-weight: 700;
+        }
+
+        .difference-negative {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
+        .difference-zero {
+            color: #6c757d;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand fw-bold"
+           th:href="@{/templates/admin}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+
+        <div class="ms-auto">
+            <a th:href="@{/inventory}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Inventory
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+<main class="container py-5">
+
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-xl-8">
+
+            <div class="mb-4">
+                <h2 class="fw-bold mb-1">
+                    Stock Adjustment
+                </h2>
+
+                <p class="text-muted mb-0">
+                    Search for a product, compare the system stock with the
+                    physical count, and save the corrected quantity.
+                </p>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-search me-2 text-primary"></i>
+                        Search Product
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search"></i>
+                        </span>
+
+                        <input id="productSearch"
+                               type="text"
+                               class="form-control"
+                               placeholder="Search by product name or barcode"
+                               autocomplete="off">
+                    </div>
+
+                    <div class="form-text">
+                        Type at least one character to search for a product.
+                    </div>
+
+                    <div id="searchResults"
+                         class="list-group mt-3">
+                    </div>
+
+                    <div id="noResults"
+                         class="text-center text-muted py-4 d-none">
+                        <i class="bi bi-search display-6 d-block mb-2"></i>
+                        No matching products found.
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="selectedProductCard"
+                 class="card border-0 shadow-sm selected-product-card">
+
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2 text-success"></i>
+                        Selected Product
+                    </h5>
+
+                    <button id="clearProductButton"
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Change Product
+                    </button>
+
+                </div>
+
+                <div class="card-body p-4">
+
+                    <form th:action="@{/inventory/adjustment}"
+                          method="post">
+
+                        <input id="productId"
+                               type="hidden"
+                               name="productId">
+
+                        <div class="row g-3 mb-4">
+
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100">
+                                    <p class="text-muted mb-1">Product</p>
+
+                                    <h5 id="selectedProductName"
+                                        class="fw-bold mb-1">
+                                        -
+                                    </h5>
+
+                                    <small id="selectedProductSize"
+                                           class="text-muted">
+                                        -
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <p class="text-muted mb-1">Barcode</p>
+
+                                    <div id="selectedProductBarcode"
+                                         class="fw-semibold">
+                                        -
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100">
+                                    <p class="text-muted mb-1">
+                                        Current Stock
+                                    </p>
+
+                                    <div class="d-flex align-items-baseline gap-1">
+                                        <h4 id="selectedCurrentStock"
+                                            class="fw-bold mb-0">
+                                            0
+                                        </h4>
+
+                                        <span id="selectedUnit"
+                                              class="text-muted">
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label for="actualStock"
+                                       class="form-label fw-semibold">
+                                    Actual Physical Stock
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input id="actualStock"
+                                       type="number"
+                                       name="actualStock"
+                                       min="0"
+                                       step="1"
+                                       class="form-control"
+                                       placeholder="Enter physically counted stock"
+                                       required>
+
+                                <div class="form-text">
+                                    Enter the actual quantity counted in the shop.
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label fw-semibold">
+                                    Stock Difference
+                                </label>
+
+                                <div class="form-control bg-light">
+                                    <span id="stockDifference"
+                                          class="difference-zero">
+                                        -
+                                    </span>
+                                </div>
+
+                                <div class="form-text">
+                                    Actual stock minus current system stock.
+                                </div>
+
+                            </div>
+
+                            <div class="col-12">
+
+                                <label for="reason"
+                                       class="form-label fw-semibold">
+                                    Adjustment Reason
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <textarea id="reason"
+                                          name="reason"
+                                          rows="4"
+                                          maxlength="255"
+                                          class="form-control"
+                                          placeholder="Example: Physical stock count correction"
+                                          required></textarea>
+
+                            </div>
+
+                        </div>
+
+                        <div id="adjustmentPreview"
+                             class="alert alert-warning mt-4 d-none">
+
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+
+                            The system stock will be changed from
+
+                            <strong id="previewBeforeStock">0</strong>
+
+                            to
+
+                            <strong id="previewAfterStock">0</strong>.
+
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+
+                            <a th:href="@{/inventory}"
+                               class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="btn btn-warning">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Save Adjustment
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js">
+</script>
+<script th:src="@{/js/inventory/adjustment.js}"></script>
+
+
+</body>
+</html>
