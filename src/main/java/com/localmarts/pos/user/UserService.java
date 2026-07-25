@@ -4,10 +4,12 @@ import com.localmarts.pos.audit.AuditService;
 import com.localmarts.pos.audit.entity.AuditDetails;
 import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.utils.AuditChangeHelper;
+
+import com.localmarts.pos.user.dto.ResetPasswordRequest;
 import com.localmarts.pos.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -170,17 +172,38 @@ public class UserService {
         );
     }
 
-    @Transactional
     public void resetPassword(
             Long userId,
-            String newPassword,
+            ResetPasswordRequest request,
             Long actorId) {
 
         User user = findById(userId);
 
+        if (!request.getNewPassword()
+                .equals(request.getConfirmPassword())) {
+
+            auditService.logFailed(
+                    actorId,
+                    AuditAction.UPDATE,
+                    "User",
+                    userId,
+                    "Failed to reset password for user: "
+                            + user.getUsername()
+                            + " because passwords did not match"
+            );
+
+            throw new IllegalArgumentException(
+                    "Passwords do not match"
+            );
+        }
+
         user.setPassword(
-                passwordEncoder.encode(newPassword)
+                passwordEncoder.encode(
+                        request.getNewPassword()
+                )
         );
+
+        user.setUpdatedBy(actorId);
 
         userRepository.save(user);
 
@@ -189,7 +212,7 @@ public class UserService {
                 AuditAction.UPDATE,
                 "User",
                 userId,
-                "Password reset for user: "
+                "Reset password for user account: "
                         + user.getUsername()
         );
     }

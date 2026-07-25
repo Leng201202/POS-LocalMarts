@@ -125,7 +125,6 @@ public class UserController {
     }
     
     @PostMapping("/users/reset-password/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public String resetPassword(
             @PathVariable Long id,
             @Valid @ModelAttribute("resetPasswordRequest")
@@ -137,16 +136,6 @@ public class UserController {
 
         User user = userService.findById(id);
 
-        if (!request.getNewPassword()
-                .equals(request.getConfirmPassword())) {
-
-            bindingResult.rejectValue(
-                    "confirmPassword",
-                    "password.mismatch",
-                    "Passwords do not match"
-            );
-        }
-
         if (bindingResult.hasErrors()) {
             model.addAttribute("user", user);
             return "admin/user/reset-password";
@@ -155,18 +144,26 @@ public class UserController {
         Long actorId =
                 currentUserService.getCurrentUserId(authentication);
 
-        userService.resetPassword(
-                id,
-                request.getNewPassword(),
-                actorId
-        );
+        try {
+            userService.resetPassword(id, request, actorId);
 
-        redirectAttributes.addFlashAttribute(
-                "successMessage",
-                "Password reset successfully for "
-                        + user.getUsername()
-        );
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Password reset successfully"
+            );
 
-        return "redirect:/users";
+            return "redirect:/users";
+
+        } catch (IllegalArgumentException exception) {
+
+            bindingResult.rejectValue(
+                    "confirmPassword",
+                    "password.mismatch",
+                    exception.getMessage()
+            );
+
+            model.addAttribute("user", user);
+            return "admin/user/reset-password";
+        }
     }
 }
