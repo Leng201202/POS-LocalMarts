@@ -8,6 +8,7 @@ import com.localmarts.pos.category.entity.Category;
 import com.localmarts.pos.common.BaseEntity;
 import com.localmarts.pos.unit.entity.Unit;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -53,6 +54,15 @@ public class Product extends BaseEntity {
     private Integer minimumStock;
 
     private BigDecimal costPrice;
+
+    @Column(
+        name = "discount_percent",
+        nullable = false,
+        precision = 5,
+        scale = 2
+    )
+    @Builder.Default
+    private BigDecimal discountPercent = BigDecimal.ZERO;
 
     @ManyToOne
     @JoinColumn(name = "category_id") 

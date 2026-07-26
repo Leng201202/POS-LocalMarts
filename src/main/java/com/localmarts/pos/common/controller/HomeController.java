@@ -15,9 +15,4 @@ public class HomeController {
     public String admin() {
         return "admin/index";
     }
-
-    @GetMapping("/cashier")
-    public String cashier() {
-        return "cashier/index";
-    }
 }

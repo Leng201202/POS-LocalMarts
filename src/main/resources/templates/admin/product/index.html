@@ -77,6 +77,7 @@
                         <th>Size</th>
                         <th>Unit</th>
                         <th>Selling Price</th>
+                        <th>Discount</th>
                         <th>Stock</th>
                         <th>Minimum</th>
                         <th>MFD</th>
@@ -117,6 +118,12 @@
 
                         <td th:text="${product.sellingPrice}">
                             25.00
+                        </td>
+
+                        <td th:text="${(product.discountPercent != null
+                            ? product.discountPercent.stripTrailingZeros().toPlainString()
+                            : '0') + '%'}">
+                            0%
                         </td>
 
                         <td>

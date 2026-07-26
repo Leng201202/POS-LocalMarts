@@ -14,4 +14,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdAndDeletedAtIsNull(Long id);
 
     boolean existsByBarcodeAndDeletedAtIsNull(String barcode);
+
+    Optional<Product> findFirstByBarcodeAndActiveTrueAndDeletedAtIsNull(
+            String barcode
+    );
+
+    List<Product> findTop30ByNameContainingIgnoreCaseAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
+            String name
+    );
 }

@@ -7,6 +7,7 @@ import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.product.entity.Product;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -48,6 +49,10 @@ public class ProductService {
 
             if (product.getStockQuantity() == null) {
                 product.setStockQuantity(0);
+            }
+
+            if (product.getDiscountPercent() == null) {
+                product.setDiscountPercent(BigDecimal.ZERO);
             }
 
             Product savedProduct = productRepository.save(product);
@@ -130,62 +135,70 @@ public class ProductService {
                 throw new RuntimeException("Barcode already exists");
             }
 
-        AuditChangeHelper changeHelper = new AuditChangeHelper()
-                .addChange(
-                        "name",
-                        existingProduct.getName(),
-                        formProduct.getName()
-                )
-                .addChange(
-                        "size",
-                        existingProduct.getSize(),
-                        formProduct.getSize()
-                )
-                .addChange(
-                        "manufacturingDate",
-                        existingProduct.getMfd(),
-                        formProduct.getMfd()
-                )
-                .addChange(
-                        "expiryDate",
-                        existingProduct.getExp(),
-                        formProduct.getExp()
-                )
-                .addChange(
-                        "category",
-                        getCategoryName(existingProduct),
-                        getCategoryName(formProduct)
-                )
-                .addChange(
-                        "unit",
-                        getUnitName(existingProduct),
-                        getUnitName(formProduct)
-                );
-
-                if (isAdmin) {
-                    changeHelper
+            AuditChangeHelper changeHelper = new AuditChangeHelper()
                     .addChange(
-                            "barcode",
-                            existingProduct.getBarcode(),
-                            formProduct.getBarcode()
+                            "name",
+                            existingProduct.getName(),
+                            formProduct.getName()
                     )
                     .addChange(
-                            "costPrice",
-                            existingProduct.getCostPrice(),
-                            formProduct.getCostPrice()
+                            "size",
+                            existingProduct.getSize(),
+                            formProduct.getSize()
                     )
                     .addChange(
-                            "sellingPrice",
-                            existingProduct.getSellingPrice(),
-                            formProduct.getSellingPrice()
+                            "manufacturingDate",
+                            existingProduct.getMfd(),
+                            formProduct.getMfd()
                     )
                     .addChange(
-                            "minimumStock",
-                            existingProduct.getMinimumStock(),
-                            formProduct.getMinimumStock()
+                            "expiryDate",
+                            existingProduct.getExp(),
+                            formProduct.getExp()
+                    )
+                    .addChange(
+                            "category",
+                            getCategoryName(existingProduct),
+                            getCategoryName(formProduct)
+                    )
+                    .addChange(
+                            "unit",
+                            getUnitName(existingProduct),
+                            getUnitName(formProduct)
                     );
-        }
-        List<AuditDetails> changes = changeHelper.build();
+
+            if (isAdmin) {
+                changeHelper
+                        .addChange(
+                                "barcode",
+                                existingProduct.getBarcode(),
+                                formProduct.getBarcode()
+                        )
+                        .addChange(
+                                "costPrice",
+                                existingProduct.getCostPrice(),
+                                formProduct.getCostPrice()
+                        )
+                        .addChange(
+                                "sellingPrice",
+                                existingProduct.getSellingPrice(),
+                                formProduct.getSellingPrice()
+                        )
+                        .addChange(
+                                "minimumStock",
+                                existingProduct.getMinimumStock(),
+                                formProduct.getMinimumStock()
+                        );
+
+                if (formProduct.getDiscountPercent() != null) {
+                    changeHelper.addChange(
+                            "discountPercent",
+                            normalizeDecimal(existingProduct.getDiscountPercent()),
+                            normalizeDecimal(formProduct.getDiscountPercent())
+                    );
+                }
+            }
+            List<AuditDetails> changes = changeHelper.build();
 
             existingProduct.setName(formProduct.getName());
             existingProduct.setSize(formProduct.getSize());
@@ -198,6 +211,12 @@ public class ProductService {
                 existingProduct.setCostPrice(formProduct.getCostPrice());
                 existingProduct.setSellingPrice(formProduct.getSellingPrice());
                 existingProduct.setMinimumStock(formProduct.getMinimumStock());
+
+                if (formProduct.getDiscountPercent() != null) {
+                    existingProduct.setDiscountPercent(
+                            formProduct.getDiscountPercent()
+                    );
+                }
             }
 
             Product savedProduct = productRepository.save(existingProduct);
@@ -239,6 +258,10 @@ public class ProductService {
         }
 
         return product.getUnit().getName();
+    }
+
+    private BigDecimal normalizeDecimal(BigDecimal value) {
+        return value == null ? null : value.stripTrailingZeros();
     }
 
 }
