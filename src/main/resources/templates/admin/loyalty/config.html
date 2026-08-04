@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Loyalty Configuration | LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <style>
+        .rule-card {
+            transition: transform 0.2s ease;
+        }
+
+        .rule-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .rule-icon {
+            width: 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .preview-box {
+            background-color: #f8f9fa;
+            border: 1px dashed #adb5bd;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand fw-bold"
+           th:href="@{/admin}">
+
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+
+        <div class="ms-auto">
+
+            <a th:href="@{/admin}"
+               class="btn btn-outline-secondary btn-sm">
+
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Dashboard
+            </a>
+
+        </div>
+    </div>
+</nav>
+
+<main class="container py-5">
+
+    <div class="d-flex flex-wrap
+                justify-content-between
+                align-items-center
+                gap-3 mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                Loyalty Configuration
+            </h2>
+
+            <p class="text-muted mb-0">
+                Configure how customers earn and redeem loyalty points.
+            </p>
+        </div>
+
+        <span class="badge bg-primary-subtle
+                     text-primary
+                     border
+                     px-3 py-2">
+
+            <i class="bi bi-person-heart me-1"></i>
+            Membership Settings
+        </span>
+    </div>
+
+    <!-- Success message -->
+    <div th:if="${successMessage}"
+         class="alert alert-success
+                alert-dismissible
+                fade show">
+
+        <i class="bi bi-check-circle me-1"></i>
+
+        <span th:text="${successMessage}">
+            Configuration updated successfully.
+        </span>
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+    </div>
+
+    <!-- Business validation error -->
+    <div th:if="${businessError}"
+         class="alert alert-danger">
+
+        <i class="bi bi-exclamation-circle me-1"></i>
+
+        <span th:text="${businessError}">
+            Invalid loyalty configuration.
+        </span>
+    </div>
+
+    <form th:action="@{/loyalty-config}"
+          th:object="${config}"
+          method="post">
+
+        <div class="row g-4">
+
+            <!-- Earn Rules -->
+            <div class="col-12 col-xl-6">
+
+                <div class="card border-0 shadow-sm
+                            rule-card h-100">
+
+                    <div class="card-header bg-white py-3">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="rule-icon
+                                        bg-success-subtle
+                                        text-success me-3">
+
+                                <i class="bi bi-plus-circle fs-4"></i>
+                            </div>
+
+                            <div>
+                                <h5 class="fw-bold mb-1">
+                                    Earn Rules
+                                </h5>
+
+                                <p class="text-muted small mb-0">
+                                    Define how customers receive points.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <!-- Enable earning -->
+                        <div class="form-check form-switch mb-4">
+
+                            <input id="earningEnabled"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   th:field="*{earningEnabled}">
+
+                            <label for="earningEnabled"
+                                   class="form-check-label fw-semibold">
+
+                                Enable point earning
+                            </label>
+
+                            <div class="form-text">
+                                When disabled, completed sales will not
+                                generate new points.
+                            </div>
+                        </div>
+
+                        <!-- Minimum purchase -->
+                        <div class="mb-3">
+
+                            <label for="minimumPurchaseAmount"
+                                   class="form-label fw-semibold">
+
+                                Minimum Purchase Amount
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+                                    ฿
+                                </span>
+
+                                <input id="minimumPurchaseAmount"
+                                       type="number"
+                                       min="0"
+                                       step="0.01"
+                                       class="form-control"
+                                       th:field="*{minimumPurchaseAmount}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'minimumPurchaseAmount'
+                                       )} ? 'is-invalid'">
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{minimumPurchaseAmount}">
+                                </div>
+
+                            </div>
+
+                            <div class="form-text">
+                                Purchases below this amount earn no points.
+                            </div>
+                        </div>
+
+                        <!-- Spending amount -->
+                        <div class="mb-3">
+
+                            <label for="spendingAmount"
+                                   class="form-label fw-semibold">
+
+                                Spending Amount
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+                                    ฿
+                                </span>
+
+                                <input id="spendingAmount"
+                                       type="number"
+                                       min="0.01"
+                                       step="0.01"
+                                       class="form-control"
+                                       th:field="*{spendingAmount}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'spendingAmount'
+                                       )} ? 'is-invalid'">
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{spendingAmount}">
+                                </div>
+
+                            </div>
+
+                            <div class="form-text">
+                                The amount required for one earning group.
+                            </div>
+                        </div>
+
+                        <!-- Earn points -->
+                        <div class="mb-3">
+
+                            <label for="earnedPoints"
+                                   class="form-label fw-semibold">
+
+                                Points Earned
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <input id="earnedPoints"
+                                       type="number"
+                                       min="1"
+                                       step="1"
+                                       class="form-control"
+                                       th:field="*{earnedPoints}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'earnedPoints'
+                                       )} ? 'is-invalid'">
+
+                                <span class="input-group-text">
+                                    points
+                                </span>
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{earnedPoints}">
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Earn preview -->
+                        <div class="preview-box p-3 mt-4">
+
+                            <div class="text-muted small mb-1">
+                                Current earning rule
+                            </div>
+
+                            <div class="fw-semibold">
+
+                                Every
+
+                                <span class="text-success"
+                                      th:text="'฿' + *{spendingAmount}">
+                                    ฿10.00
+                                </span>
+
+                                spent earns
+
+                                <span class="text-success"
+                                      th:text="*{earnedPoints} + ' point(s)'">
+                                    1 point
+                                </span>.
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redeem Rules -->
+            <div class="col-12 col-xl-6">
+
+                <div class="card border-0 shadow-sm
+                            rule-card h-100">
+
+                    <div class="card-header bg-white py-3">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="rule-icon
+                                        bg-primary-subtle
+                                        text-primary me-3">
+
+                                <i class="bi bi-gift fs-4"></i>
+                            </div>
+
+                            <div>
+                                <h5 class="fw-bold mb-1">
+                                    Redeem Rules
+                                </h5>
+
+                                <p class="text-muted small mb-0">
+                                    Define how points become discounts.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <!-- Enable redemption -->
+                        <div class="form-check form-switch mb-4">
+
+                            <input id="redemptionEnabled"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   th:field="*{redemptionEnabled}">
+
+                            <label for="redemptionEnabled"
+                                   class="form-check-label fw-semibold">
+
+                                Enable point redemption
+                            </label>
+
+                            <div class="form-text">
+                                When disabled, customers keep their points
+                                but cannot use them for discounts.
+                            </div>
+                        </div>
+
+                        <!-- Redeem points -->
+                        <div class="mb-3">
+
+                            <label for="redeemPoints"
+                                   class="form-label fw-semibold">
+
+                                Redeem Points
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <input id="redeemPoints"
+                                       type="number"
+                                       min="1"
+                                       step="1"
+                                       class="form-control"
+                                       th:field="*{redeemPoints}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'redeemPoints'
+                                       )} ? 'is-invalid'">
+
+                                <span class="input-group-text">
+                                    points
+                                </span>
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{redeemPoints}">
+                                </div>
+
+                            </div>
+
+                            <div class="form-text">
+                                Number of points in one redemption group.
+                            </div>
+                        </div>
+
+                        <!-- Redeem value -->
+                        <div class="mb-3">
+
+                            <label for="redeemValue"
+                                   class="form-label fw-semibold">
+
+                                Discount Value
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+                                    ฿
+                                </span>
+
+                                <input id="redeemValue"
+                                       type="number"
+                                       min="0.01"
+                                       step="0.01"
+                                       class="form-control"
+                                       th:field="*{redeemValue}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'redeemValue'
+                                       )} ? 'is-invalid'">
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{redeemValue}">
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Minimum redemption -->
+                        <div class="mb-3">
+
+                            <label for="minimumRedeemPoints"
+                                   class="form-label fw-semibold">
+
+                                Minimum Redeem Points
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <div class="input-group">
+
+                                <input id="minimumRedeemPoints"
+                                       type="number"
+                                       min="1"
+                                       step="1"
+                                       class="form-control"
+                                       th:field="*{minimumRedeemPoints}"
+                                       th:classappend="${#fields.hasErrors(
+                                            'minimumRedeemPoints'
+                                       )} ? 'is-invalid'">
+
+                                <span class="input-group-text">
+                                    points
+                                </span>
+
+                                <div class="invalid-feedback"
+                                     th:errors="*{minimumRedeemPoints}">
+                                </div>
+
+                            </div>
+
+                            <div class="form-text">
+                                Must be divisible by the redeem-point value.
+                            </div>
+                        </div>
+
+                        <!-- Redeem preview -->
+                        <div class="preview-box p-3 mt-4">
+
+                            <div class="text-muted small mb-1">
+                                Current redemption rule
+                            </div>
+
+                            <div class="fw-semibold">
+
+                                <span class="text-primary"
+                                      th:text="*{redeemPoints} + ' points'">
+                                    100 points
+                                </span>
+
+                                gives a
+
+                                <span class="text-primary"
+                                      th:text="'฿' + *{redeemValue}">
+                                    ฿10.00
+                                </span>
+
+                                discount.
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Explanation -->
+        <div class="alert alert-info mt-4">
+
+            <i class="bi bi-info-circle me-1"></i>
+
+            Example: If the spending amount is ฿10 and the earned
+            points value is 1, a ฿250 eligible checkout earns
+            25 points.
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+
+            <a th:href="@{/admin}"
+               class="btn btn-outline-secondary">
+
+                Cancel
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary">
+
+                <i class="bi bi-save me-1"></i>
+                Save Configuration
+            </button>
+
+        </div>
+
+    </form>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>
