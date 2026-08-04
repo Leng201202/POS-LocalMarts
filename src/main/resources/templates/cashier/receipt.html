@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Receipt ' + sale.invoiceNo + ' | LocalMart POS'}">
+        Sale Receipt | LocalMart POS
+    </title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <style>
+        .receipt {
+            max-width: 900px;
+        }
+
+        @media print {
+            body {
+                background: #fff !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .receipt {
+                max-width: none;
+            }
+
+            .card {
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar bg-white shadow-sm no-print">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            LocalMart POS
+        </a>
+
+        <div class="d-flex gap-2">
+            <a th:href="@{/cashier}"
+               class="btn btn-outline-secondary btn-sm">
+                Dashboard
+            </a>
+
+            <button type="button"
+                    class="btn btn-primary btn-sm"
+                    onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>
+                Print
+            </button>
+        </div>
+    </div>
+</nav>
+
+<main class="container receipt py-4">
+
+    <div th:if="${success}"
+         class="alert alert-success no-print"
+         th:text="${success}">
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+
+            <div class="text-center border-bottom pb-4 mb-4">
+                <h2 class="fw-bold mb-1">LocalMart POS</h2>
+                <p class="text-muted mb-0">Sale Receipt</p>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <div class="text-muted small">Invoice Number</div>
+                    <div class="fw-semibold"
+                         th:text="${sale.invoiceNo}">
+                        INV-20260726-000001
+                    </div>
+                </div>
+
+                <div class="col-sm-6 text-sm-end">
+                    <div class="text-muted small">Date and Time</div>
+                    <div th:text="${#temporals.format(
+                        sale.timestamp, 'yyyy-MM-dd HH:mm:ss')}">
+                        2026-07-26 12:30:00
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="text-muted small">Cashier</div>
+                    <div th:text="${sale.cashier.fullName}">
+                        Cashier
+                    </div>
+                </div>
+
+                <div class="col-sm-6 text-sm-end">
+                    <div class="text-muted small">Payment Method</div>
+                    <div th:text="${sale.paymentMethod}">
+                        CASH
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Qty</th>
+                        <th class="text-end">Discount</th>
+                        <th class="text-end">Line Total</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="item : ${sale.items}">
+                        <td>
+                            <div class="fw-semibold"
+                                 th:text="${item.productNameSnapshot}">
+                                Product
+                            </div>
+                            <small class="text-muted"
+                                   th:text="${(item.sizeSnapshot != null
+                                       ? item.sizeSnapshot
+                                       : '') + (item.unitSnapshot != null
+                                       ? ' / ' + item.unitSnapshot
+                                       : '')}">
+                                Size / Unit
+                            </small>
+                        </td>
+
+                        <td class="text-end">
+                            <span>฿</span>
+                            <span th:text="${#numbers.formatDecimal(
+                                item.unitPrice, 1, 2)}">
+                                0.00
+                            </span>
+                        </td>
+
+                        <td class="text-end"
+                            th:text="${item.quantity}">
+                            1
+                        </td>
+
+                        <td class="text-end">
+                            <div th:text="${item.discountPercentSnapshot
+                                .stripTrailingZeros().toPlainString() + '%'}">
+                                0%
+                            </div>
+                            <small class="text-muted">
+                                -฿<span th:text="${#numbers.formatDecimal(
+                                    item.discountAmount, 1, 2)}">
+                                    0.00
+                                </span>
+                            </small>
+                        </td>
+
+                        <td class="text-end fw-semibold">
+                            <span>฿</span>
+                            <span th:text="${#numbers.formatDecimal(
+                                item.netTotal, 1, 2)}">
+                                0.00
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row justify-content-end">
+                <div class="col-sm-7 col-md-5">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span>
+                            ฿<span th:text="${#numbers.formatDecimal(
+                                sale.subtotal, 1, 2)}">
+                                0.00
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Discount</span>
+                        <span>
+                            -฿<span th:text="${#numbers.formatDecimal(
+                                sale.totalDiscount, 1, 2)}">
+                                0.00
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top pt-2 mb-2">
+                        <strong>Final Total</strong>
+                        <strong>
+                            ฿<span th:text="${#numbers.formatDecimal(
+                                sale.totalAmount, 1, 2)}">
+                                0.00
+                            </span>
+                        </strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Paid Amount</span>
+                        <span>
+                            ฿<span th:text="${#numbers.formatDecimal(
+                                sale.paidAmount, 1, 2)}">
+                                0.00
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Change</span>
+                        <span>
+                            ฿<span th:text="${#numbers.formatDecimal(
+                                sale.changeAmount, 1, 2)}">
+                                0.00
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${sale.note != null}"
+                 class="border-top mt-4 pt-3">
+                <div class="text-muted small">Note</div>
+                <div th:text="${sale.note}">
+                    Sale note
+                </div>
+            </div>
+
+            <p class="text-center text-muted mt-5 mb-0">
+                Thank you for shopping with LocalMart.
+            </p>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mt-4 no-print">
+        <a th:href="@{/cashier/sale}"
+           class="btn btn-success">
+            <i class="bi bi-cart-plus me-1"></i>
+            New Sale
+        </a>
+
+        <button type="button"
+                class="btn btn-outline-primary"
+                onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>
+            Print Receipt
+        </button>
+    </div>
+</main>
+
+<script>
+    sessionStorage.removeItem("localmart-pos-sale-cart");
+</script>
+</body>
+</html>

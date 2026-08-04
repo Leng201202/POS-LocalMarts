@@ -32,6 +32,8 @@ public class UnitService {
     }
 
     public Unit create(Unit unit, Long createdBy) {
+        unit.setName(unit.getName().trim());
+        unit.setAbbreviation(unit.getAbbreviation().trim());
         validateUniqueUnit(unit, createdBy, AuditAction.CREATE, null);
 
         unit.setCreatedBy(createdBy);
@@ -42,6 +44,8 @@ public class UnitService {
     }
 
     public void update(Long id, Unit formUnit, Long updatedBy) {
+        formUnit.setName(formUnit.getName().trim());
+        formUnit.setAbbreviation(formUnit.getAbbreviation().trim());
         Unit existingUnit = findById(id);
 
         if (!existingUnit.getName().equalsIgnoreCase(formUnit.getName())

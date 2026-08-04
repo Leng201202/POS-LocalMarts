@@ -1,162 +1,173 @@
 <!DOCTYPE html>
-    <html lang="en" xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cashier Dashboard | LocalMart POS</title>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashier Dashboard | LocalMart POS</title>
 
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    </head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
 
-    <body class="bg-light">
+<body class="bg-light">
 
-    <nav class="navbar navbar-expand-lg bg-white shadow-sm">
-        <div class="container-fluid px-4">
-
-            <a class="navbar-brand fw-bold" th:href="@{/cashier}">
-                LocalMart POS
-            </a>
-
-            <div class="ms-auto">
-                <form th:action="@{/logout}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-box-arrow-right"></i>
-                        Logout
-                    </button>
-                </form>
-            </div>
-
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            LocalMart POS
+        </a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit"
+                        class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="container-fluid">
+<div class="container-fluid px-4 py-4">
 
-        <div class="row">
-
-            <!-- Sidebar -->
-            <aside class="col-md-3 col-lg-2 bg-white min-vh-100 shadow-sm p-3">
-
-                <h6 class="text-muted text-uppercase mb-3">
-                    Cashier Menu
-                </h6>
-
-                <div class="list-group list-group-flush">
-
-                </div>
-
-            </aside>
-
-            <!-- Main Content -->
-            <main class="col-md-9 col-lg-10 p-4">
-
-                <div class="mb-4">
-                    <h2 class="fw-bold">
-                        Cashier Dashboard
-                    </h2>
-
-                    <p class="text-muted">
-                        Welcome back! Ready to start today's sales.
-                    </p>
-                </div>
-
-                <!-- Summary Cards -->
-                <div class="row g-4 mb-4">
-
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-
-                                <div class="d-flex justify-content-between">
-
-                                    <div>
-                                        <p class="text-muted mb-1">
-                                            Today's Sales
-                                        </p>
-
-                                        <h3 class="fw-bold">$0.00</h3>
-                                    </div>
-
-                                    <i class="bi bi-cash-stack display-6 text-success"></i>
-
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-
-                                <div class="d-flex justify-content-between">
-
-                                    <div>
-                                        <p class="text-muted mb-1">
-                                            Transactions
-                                        </p>
-
-                                        <h3 class="fw-bold">0</h3>
-                                    </div>
-
-                                    <i class="bi bi-receipt display-6 text-primary"></i>
-
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-
-                                <div class="d-flex justify-content-between">
-
-                                    <div>
-                                        <p class="text-muted mb-1">
-                                            Customers
-                                        </p>
-
-                                        <h3 class="fw-bold">0</h3>
-                                    </div>
-
-                                    <i class="bi bi-person-check display-6 text-warning"></i>
-
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="card border-0 shadow-sm">
-
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            Quick Actions
-                        </h5>
-                    </div>
-
-                    <div class="card-body">
-
-                        <div class="row g-3">
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </main>
-
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Cashier Dashboard</h2>
+            <p class="text-muted mb-0">
+                Your completed sales for today.
+            </p>
         </div>
 
+        <a th:href="@{/cashier/sale}"
+           class="btn btn-primary">
+            <i class="bi bi-cart-plus me-1"></i>
+            Start New Sale
+        </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">
+                                Today's Completed Sales
+                            </p>
+                            <h3 class="fw-bold mb-0"
+                                th:text="${todaySaleCount}">
+                                0
+                            </h3>
+                        </div>
 
-    </body>
+                        <i class="bi bi-receipt display-6 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">
+                                Today's Sales Revenue
+                            </p>
+                            <h3 class="fw-bold mb-0">
+                                <span>฿</span>
+                                <span th:text="${#numbers.formatDecimal(
+                                    todayRevenue, 1, 2)}">
+                                    0.00
+                                </span>
+                            </h3>
+                        </div>
+
+                        <i class="bi bi-cash-stack display-6 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Your Recent Sales</h5>
+
+            <a th:href="@{/cashier/sale}"
+               class="btn btn-outline-primary btn-sm">
+                New Sale
+            </a>
+        </div>
+
+        <div class="card-body">
+            <div th:if="${#lists.isEmpty(recentSales)}"
+                 class="alert alert-info mb-0">
+                No sales have been completed yet.
+            </div>
+
+            <div th:if="${!#lists.isEmpty(recentSales)}"
+                 class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Date and Time</th>
+                        <th>Final Total</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th class="text-end">Receipt</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="sale : ${recentSales}">
+                        <td class="fw-semibold"
+                            th:text="${sale.invoiceNo}">
+                            INV-20260726-000001
+                        </td>
+
+                        <td th:text="${#temporals.format(
+                            sale.timestamp, 'yyyy-MM-dd HH:mm')}">
+                            2026-07-26 12:30
+                        </td>
+
+                        <td>
+                            <span>฿</span>
+                            <span th:text="${#numbers.formatDecimal(
+                                sale.totalAmount, 1, 2)}">
+                                0.00
+                            </span>
+                        </td>
+
+                        <td th:text="${sale.paymentMethod}">
+                            CASH
+                        </td>
+
+                        <td>
+                            <span class="badge text-bg-success"
+                                  th:text="${sale.saleStatus}">
+                                COMPLETED
+                            </span>
+                        </td>
+
+                        <td class="text-end">
+                            <a th:href="@{/cashier/sales/{id}/receipt(
+                                id=${sale.id})}"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-receipt"></i>
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>

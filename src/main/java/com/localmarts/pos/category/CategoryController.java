@@ -1,7 +1,10 @@
 package com.localmarts.pos.category;
 
 import com.localmarts.pos.category.entity.Category;
+import com.localmarts.pos.common.CurrentUserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -9,11 +12,13 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequestMapping("category")
 public class CategoryController {
-    private static final Long CURRENT_USER_ID = 1L;
     @Autowired
     private final CategoryService categoryService;
-    public CategoryController(CategoryService categoryService) {
+    private final CurrentUserService currentUserService;
+    public CategoryController(CategoryService categoryService,
+         CurrentUserService currentUserService) {
         this.categoryService = categoryService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping()
@@ -28,40 +33,48 @@ public class CategoryController {
         return "admin/category/create";
     }
 
-    @PostMapping("create")
-    public String save(@ModelAttribute Category category,Model model){
-        try {
-            categoryService.create(category,CURRENT_USER_ID);
-            return "redirect:/category";
-        }catch (RuntimeException e){
-            model.addAttribute("category", category);
-            model.addAttribute("error", e.getMessage());
-            return "admin/category/create";
-        }
-    }
+    @PostMapping("/create")
+    public String create(
+            @ModelAttribute Category category,
+            Authentication authentication) {
 
+        Long actorId =
+                currentUserService.getCurrentUserId(authentication);
+
+        categoryService.create(category, actorId);
+
+        return "redirect:/categories";
+    }
     @GetMapping("/edit/{id}")
     public String edit(@PathVariable Long id,Model model){
         model.addAttribute("category",categoryService.findById(id));
         return "admin/category/edit";
     }
 
-    @PostMapping("/edit/{id}")
-    public String update(@PathVariable Long id,@ModelAttribute Category category,Model model){
-        try{
-            categoryService.update(id,category,CURRENT_USER_ID);
-            return "redirect:/category";
-        }catch (RuntimeException e){
-            model.addAttribute("category",category);
-            model.addAttribute("error",e.getMessage());
-            return "admin/category/edit";
-        }
+    @PostMapping("/{id}/edit")
+    public String update(
+            @PathVariable Long id,
+            @ModelAttribute Category category,
+            Authentication authentication) {
+
+        Long actorId =
+                currentUserService.getCurrentUserId(authentication);
+
+        categoryService.update(id, category, actorId);
+
+        return "redirect:/categories";
     }
 
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id) {
-        categoryService.softDelete(id, CURRENT_USER_ID);
-        return "redirect:/category";
+    public String delete(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        Long actorId =
+                currentUserService.getCurrentUserId(authentication);
+
+        categoryService.softDelete(id, actorId);
+        return "redirect:/categories";
     }
 
 
