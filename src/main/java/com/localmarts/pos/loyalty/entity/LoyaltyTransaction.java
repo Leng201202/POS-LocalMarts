@@ -1,7 +1,7 @@
 package com.localmarts.pos.loyalty.entity;
 
-import com.localmarts.pos.common.controller.Sale;
 import com.localmarts.pos.customer.entity.Customer;
+import com.localmarts.pos.sale.entity.Sale;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
