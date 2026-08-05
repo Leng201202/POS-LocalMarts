@@ -1,7 +1,7 @@
 package com.localmarts.pos.inventory.entity;
 
 
-import com.localmarts.pos.common.controller.Product;
+import com.localmarts.pos.product.entity.Product;
 import com.localmarts.pos.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;

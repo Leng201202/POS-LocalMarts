@@ -1,6 +1,5 @@
 package com.localmarts.pos.inventory;
 
-import com.localmarts.pos.common.controller.Product;
 import com.localmarts.pos.inventory.entity.Inventory;
 import com.localmarts.pos.inventory.entity.InventoryType;
 import org.springframework.data.jpa.repository.JpaRepository;

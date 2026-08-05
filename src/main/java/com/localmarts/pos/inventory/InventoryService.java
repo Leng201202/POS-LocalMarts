@@ -1,9 +1,9 @@
 package com.localmarts.pos.inventory;
 
-import com.localmarts.pos.common.controller.Product;
-import com.localmarts.pos.common.controller.ProductRepository;
 import com.localmarts.pos.inventory.entity.Inventory;
 import com.localmarts.pos.inventory.entity.InventoryType;
+import com.localmarts.pos.product.ProductRepository;
+import com.localmarts.pos.product.entity.Product;
 import com.localmarts.pos.user.UserRepository;
 import com.localmarts.pos.user.entity.User;
 import lombok.RequiredArgsConstructor;
