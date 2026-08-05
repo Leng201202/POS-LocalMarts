@@ -51,11 +51,16 @@
 					<a th:href="@{/unit}" class="list-group-item list-group-item-action">
 					    <i class="bi bi-rulers me-2"></i> Units
 					</a>
-                    <a href="/inventory" class="list-group-item list-group-item-action">
+                    <a th:href="@{/inventory}" class="list-group-item list-group-item-action">
                         <i class="bi bi-clipboard-data me-2"></i> Inventory
                     </a>
-                    <a href="/audit" class="list-group-item list-group-item-action">
+                    <a th:href="@{/audit}" class="list-group-item list-group-item-action">
                         <i class="bi bi-clock-history me-2"></i> Audit Logs
+                    </a>
+                    <a th:href="@{/loyalty-config}"
+                       class="list-group-item list-group-item-action">
+                        <i class="bi bi-gift me-2"></i>
+                        Loyalty Configuration
                     </a>
                 </div>
             </aside>
