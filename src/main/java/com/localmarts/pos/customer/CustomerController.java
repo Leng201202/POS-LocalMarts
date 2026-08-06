@@ -15,9 +15,17 @@ public class CustomerController {
     private final CustomerService customerService;
     private final CurrentUserService currentUserService;
 
-    @GetMapping()
-    public String list(Model model){
-        model.addAttribute("customers",customerService.findAll());
+
+    @GetMapping
+    public String list(
+            @RequestParam(required = false) String keyword,
+            Model model
+    ) {
+        model.addAttribute(
+                "customers",
+                customerService.filter(keyword)
+        );
+        model.addAttribute("keyword", keyword);
         return "common/customer/index";
     }
 

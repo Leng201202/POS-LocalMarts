@@ -22,8 +22,17 @@ public class CustomerService {
     private final CurrentUserService currentUserService;
     private final AuditService auditService;
 
-    public List<Customer> findAll(){
-        return customerRepository.findByDeletedAtIsNull();
+    public List<Customer> findAll(String keyword){
+        return customerRepository.filter(
+                keyword == null ? null : keyword.trim()
+        );
+    }
+
+    public List<Customer> filter(String keyword) {
+        return customerRepository.filter(
+                keyword == null ? null : keyword.trim()
+        );
+
     }
 
     @Transactional
