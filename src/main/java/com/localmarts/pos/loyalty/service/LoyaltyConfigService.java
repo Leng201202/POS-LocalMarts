@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoyaltyConfigService {
 
-    private final String entity = "loyalty_config";
+    private final String entity = "Loyalty-Config";
 
     private final LoyaltyConfigRepository loyaltyConfigRepository;
     private final AuditService auditService;

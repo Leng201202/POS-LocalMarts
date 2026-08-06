@@ -3,7 +3,7 @@ package com.localmarts.pos.category;
 import com.localmarts.pos.category.entity.Category;
 import com.localmarts.pos.common.CurrentUserService;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,15 +11,12 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("category")
+@RequiredArgsConstructor
 public class CategoryController {
-    @Autowired
+
     private final CategoryService categoryService;
     private final CurrentUserService currentUserService;
-    public CategoryController(CategoryService categoryService,
-         CurrentUserService currentUserService) {
-        this.categoryService = categoryService;
-        this.currentUserService = currentUserService;
-    }
+
 
     @GetMapping()
     public String list(Model model){

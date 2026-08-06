@@ -5,21 +5,19 @@ import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.entity.AuditDetails;
 import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.category.entity.Category;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CategoryService {
     private final String entity="Category";
     private final CategoryRepository categoryRepository;
     private final AuditService auditService;
 
-    public CategoryService(CategoryRepository categoryRepository, AuditService auditService) {
-        this.categoryRepository = categoryRepository;
-        this.auditService = auditService;
-    }
 
     public List<Category> findAll(){
         return categoryRepository.findByDeletedAtIsNull();
