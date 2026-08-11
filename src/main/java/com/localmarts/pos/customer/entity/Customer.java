@@ -24,8 +24,8 @@ public class Customer extends BaseEntity {
     private String phoneNumber;
 
 
-    private double pointBalance;
+    private Long pointBalance;
 
-    private double totalSpending;
+    private Long totalSpending;
 
 }

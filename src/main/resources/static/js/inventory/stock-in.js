@@ -6,7 +6,7 @@ const fileSize = document.getElementById("fileSize");
 const removeFileButton = document.getElementById("removeFileButton");
 const uploadButton = document.getElementById("uploadButton");
 
-const allowedExtensions = ["csv", "xlsx", "xls"];
+const allowedExtensions = ["xlsx"];
 const maximumFileSize = 10 * 1024 * 1024;
 
 stockFileInput.addEventListener("change", function () {
@@ -57,7 +57,7 @@ function selectFile(file) {
         .toLowerCase();
 
     if (!allowedExtensions.includes(extension)) {
-        alert("Only CSV, XLSX, and XLS files are allowed.");
+        alert("Only .xlsx files are allowed.");
         stockFileInput.value = "";
         return;
     }

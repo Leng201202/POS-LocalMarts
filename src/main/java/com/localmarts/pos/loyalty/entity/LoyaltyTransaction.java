@@ -27,6 +27,7 @@ public class LoyaltyTransaction {
     @JoinColumn(name = "sale_id")
     private Sale sale;
 
+    @Column(nullable = false)
     private Long points;
 
     @Enumerated(EnumType.STRING)
@@ -42,9 +43,6 @@ public class LoyaltyTransaction {
     @CreationTimestamp
     @Column(nullable = false,updatable = false)
     private LocalDateTime timestamp;
-
-
-
 
 
 }

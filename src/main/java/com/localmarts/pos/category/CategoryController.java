@@ -40,7 +40,7 @@ public class CategoryController {
 
         categoryService.create(category, actorId);
 
-        return "redirect:/categories";
+        return "redirect:/category";
     }
     @GetMapping("/edit/{id}")
     public String edit(@PathVariable Long id,Model model){
@@ -59,7 +59,7 @@ public class CategoryController {
 
         categoryService.update(id, category, actorId);
 
-        return "redirect:/categories";
+        return "redirect:/category";
     }
 
     @PostMapping("/delete/{id}")
@@ -71,9 +71,6 @@ public class CategoryController {
                 currentUserService.getCurrentUserId(authentication);
 
         categoryService.softDelete(id, actorId);
-        return "redirect:/categories";
+        return "redirect:/category";
     }
-
-
-
 }

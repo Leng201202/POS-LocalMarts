@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Review Stock In | LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <style>
+        .table th,
+        .table td {
+            vertical-align: middle;
+        }
+
+        .quantity-input {
+            width: 100px;
+        }
+
+        .cost-input {
+            width: 110px;
+        }
+
+        .mapping-select {
+            min-width: 150px;
+        }
+
+        .summary-card h3 {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand fw-bold" th:href="@{/admin}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+
+        <div class="ms-auto">
+            <a th:href="@{/inventory}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Inventory
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+<main class="container-fluid p-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">Review Stock-In File</h2>
+            <p class="text-muted mb-0">
+                Nothing has been saved yet. Fix or map any flagged rows, then confirm.
+            </p>
+        </div>
+
+        <span class="badge bg-light text-dark border px-3 py-2" th:text="${fileName}">
+            file.xlsx
+        </span>
+
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <i class="bi bi-exclamation-circle me-1"></i>
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- Summary -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-lg">
+            <div class="card border-0 shadow-sm summary-card h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Total Rows</p>
+                    <h3 class="fw-bold" th:text="${totalCount}">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg">
+            <div class="card border-0 shadow-sm summary-card h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Existing Products</p>
+                    <h3 class="fw-bold text-success" th:text="${existingCount}">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg">
+            <div class="card border-0 shadow-sm summary-card h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">New Products</p>
+                    <h3 class="fw-bold text-info" th:text="${newCount}">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg">
+            <div class="card border-0 shadow-sm summary-card h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Needs Mapping</p>
+                    <h3 class="fw-bold text-warning" th:text="${needsMappingCount}">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg">
+            <div class="card border-0 shadow-sm summary-card h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Invalid Rows</p>
+                    <h3 class="fw-bold text-danger" th:text="${invalidCount}">0</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <form id="confirmForm"
+          th:action="@{/inventory/stock-in/confirm}"
+          th:object="${confirmRequest}"
+          method="post">
+
+        <input type="hidden" th:field="*{batchToken}"/>
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-header bg-white">
+                <h5 class="mb-1">Imported Product Review</h5>
+                <small class="text-muted">
+                    Quantity, cost price, and category/unit mapping for new products can be
+                    edited below. Existing-product category/unit are not changed.
+                </small>
+            </div>
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead class="table-light">
+                        <tr>
+                            <th>Row</th>
+                            <th>Status</th>
+                            <th>Barcode</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Unit</th>
+                            <th>Size</th>
+                            <th>Quantity</th>
+                            <th>Cost Price</th>
+                            <th>MFD</th>
+                            <th>EXP</th>
+                            <th>Issues</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+
+                        <tr th:each="row, rowStat : ${reviewRows}"
+                            th:classappend="${row.status.name() == 'INVALID'} ? 'table-danger' : (${row.status.name() == 'NEEDS_MAPPING'} ? 'table-warning' : '')"
+                            th:attr="data-row-index=${rowStat.index},
+                                     data-structural-blocked=${not #lists.isEmpty(row.structuralErrors)},
+                                     data-needs-mapping=${row.status.name() == 'NEEDS_MAPPING'}"
+                            class="stock-in-row">
+
+                            <td>
+                                <input type="hidden" th:field="*{rows[__${rowStat.index}__].rowNumber}"/>
+                                <span th:text="${row.rowNumber}">1</span>
+                            </td>
+
+                            <td>
+                                <span th:switch="${row.status.name()}">
+                                    <span th:case="'EXISTING_PRODUCT'" class="badge bg-success">EXISTING</span>
+                                    <span th:case="'NEW_PRODUCT'" class="badge bg-info text-dark">NEW</span>
+                                    <span th:case="'NEEDS_MAPPING'" class="badge bg-warning text-dark">NEEDS MAPPING</span>
+                                    <span th:case="'INVALID'" class="badge bg-danger">INVALID</span>
+                                </span>
+                            </td>
+
+                            <td th:text="${#strings.isEmpty(row.barcode)} ? '-' : ${row.barcode}">-</td>
+
+                            <td>
+                                <div class="fw-semibold"
+                                     th:text="${row.isExistingProduct()} ? ${row.existingProductName} : ${row.productName}">
+                                    Product
+                                </div>
+                                <small class="text-muted" th:if="${row.isExistingProduct()}"
+                                       th:text="'Current stock: ' + ${row.existingStockQuantity}">
+                                </small>
+                            </td>
+
+                            <td>
+                                <span th:if="${row.isExistingProduct()}" th:text="${row.existingCategoryName}">Category</span>
+                                <select th:unless="${row.isExistingProduct()}"
+                                        th:field="*{rows[__${rowStat.index}__].categoryId}"
+                                        class="form-select form-select-sm mapping-select category-select">
+                                    <option value="">Select category</option>
+                                    <option th:each="category : ${categories}"
+                                            th:value="${category.id}"
+                                            th:text="${category.name}">
+                                    </option>
+                                </select>
+                                <div class="small text-muted"
+                                     th:if="${!row.isExistingProduct() and !#strings.isEmpty(row.uploadedCategory)}"
+                                     th:text="'Uploaded: ' + ${row.uploadedCategory}">
+                                </div>
+                            </td>
+
+                            <td>
+                                <span th:if="${row.isExistingProduct()}" th:text="${row.existingUnitName}">Unit</span>
+                                <select th:unless="${row.isExistingProduct()}"
+                                        th:field="*{rows[__${rowStat.index}__].unitId}"
+                                        class="form-select form-select-sm mapping-select unit-select">
+                                    <option value="">Select unit</option>
+                                    <option th:each="unit : ${units}"
+                                            th:value="${unit.id}"
+                                            th:text="${unit.name}">
+                                    </option>
+                                </select>
+                                <div class="small text-muted"
+                                     th:if="${!row.isExistingProduct() and !#strings.isEmpty(row.uploadedUnit)}"
+                                     th:text="'Uploaded: ' + ${row.uploadedUnit}">
+                                </div>
+                            </td>
+
+                            <td th:text="${#strings.isEmpty(row.size)} ? '-' : ${row.size}">-</td>
+
+                            <td>
+                                <input type="number" min="1" step="1"
+                                       th:field="*{rows[__${rowStat.index}__].quantity}"
+                                       class="form-control form-control-sm quantity-input">
+                            </td>
+
+                            <td>
+                                <input type="number" min="0.01" step="0.01"
+                                       th:field="*{rows[__${rowStat.index}__].costPrice}"
+                                       class="form-control form-control-sm cost-input">
+                            </td>
+
+                            <td th:text="${row.mfd}">-</td>
+                            <td th:text="${row.exp}">-</td>
+
+                            <td>
+                                <span th:if="${!#lists.isEmpty(row.errors)}"
+                                      class="text-danger small" th:text="${row.errorMessage}">
+                                </span>
+                                <span th:if="${#lists.isEmpty(row.errors) and row.status.name() == 'NEEDS_MAPPING'}"
+                                      class="text-warning small">
+                                    Select a category and unit.
+                                </span>
+                                <span th:if="${#lists.isEmpty(row.errors) and row.status.name() != 'NEEDS_MAPPING'}"
+                                      class="text-success small">
+                                    Ready
+                                </span>
+                            </td>
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <div class="alert alert-warning mt-3" th:if="${invalidCount > 0 or needsMappingCount > 0}">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Invalid rows must be fixed by re-uploading a corrected file, and every row
+                    needing mapping must have a category and unit selected before this batch
+                    can be confirmed.
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+
+                    <a th:href="@{/inventory/stock-in}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Upload Another File
+                    </a>
+
+                    <div class="d-flex gap-2">
+
+                        <button type="submit" form="cancelForm" class="btn btn-outline-danger">
+                            Cancel Import
+                        </button>
+
+                        <button id="confirmButton" type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Confirm Stock In
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </form>
+
+    <form id="cancelForm" th:action="@{/inventory/stock-in/cancel}" method="post"></form>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script th:inline="javascript">
+    (function () {
+        const rows = Array.from(document.querySelectorAll(".stock-in-row"));
+        const confirmButton = document.getElementById("confirmButton");
+
+        function isRowBlocked(row) {
+            if (row.dataset.structuralBlocked === "true") {
+                return true;
+            }
+            if (row.dataset.needsMapping === "true") {
+                const categorySelect = row.querySelector(".category-select");
+                const unitSelect = row.querySelector(".unit-select");
+                const categoryOk = !categorySelect || categorySelect.value !== "";
+                const unitOk = !unitSelect || unitSelect.value !== "";
+                return !(categoryOk && unitOk);
+            }
+            return false;
+        }
+
+        function refreshConfirmButton() {
+            const blocked = rows.some(isRowBlocked);
+            confirmButton.disabled = blocked;
+        }
+
+        rows.forEach(function (row) {
+            row.querySelectorAll(".category-select, .unit-select").forEach(function (select) {
+                select.addEventListener("change", refreshConfirmButton);
+            });
+        });
+
+        refreshConfirmButton();
+    })();
+</script>
+
+</body>
+</html>

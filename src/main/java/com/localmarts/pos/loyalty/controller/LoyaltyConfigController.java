@@ -26,7 +26,7 @@ public class LoyaltyConfigController {
     @GetMapping
     public String showConfig(Model model) {
 
-        LoyaltyConfig config = loyaltyConfigService.getConfig(CURRENT_USER_ID);
+        LoyaltyConfig config = loyaltyConfigService.getConfig();
         LoyaltyConfigRequest request = new LoyaltyConfigRequest(
                 config.getMinimumPurchaseAmount(),
                 config.getSpendingAmount(),

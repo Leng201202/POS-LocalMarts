@@ -46,11 +46,6 @@
             border-radius: 50%;
             font-weight: 700;
         }
-
-        .table th,
-        .table td {
-            white-space: nowrap;
-        }
     </style>
 </head>
 
@@ -87,11 +82,11 @@
             </h2>
 
             <p class="text-muted mb-0">
-                Upload an Excel or CSV file to add stock for multiple products.
+                Upload an Excel file to add stock for multiple products at once.
             </p>
         </div>
 
-        <a th:href="@{/inventory/stock-in/template}"
+        <a th:href="@{/inventory/template}"
            class="btn btn-outline-primary">
 
             <i class="bi bi-download me-1"></i>
@@ -143,14 +138,14 @@
                 <div class="card-body p-4">
 
                     <form id="stockInForm"
-                          th:action="@{/inventory/stock-in}"
+                          th:action="@{/inventory/stock-in/upload}"
                           method="post"
                           enctype="multipart/form-data">
 
                         <input id="stockFile"
                                type="file"
                                name="file"
-                               accept=".csv,.xlsx,.xls"
+                               accept=".xlsx"
                                hidden
                                required>
 
@@ -169,7 +164,7 @@
                             </p>
 
                             <span class="badge text-bg-light border">
-                                CSV, XLSX or XLS
+                                XLSX only
                             </span>
 
                             <p class="small text-muted mt-3 mb-0">
@@ -215,47 +210,13 @@
 
                         </div>
 
-                        <div class="mt-4">
-
-                            <label for="defaultReason"
-                                   class="form-label fw-semibold">
-                                Default Reason
-                            </label>
-
-                            <input id="defaultReason"
-                                   name="defaultReason"
-                                   type="text"
-                                   maxlength="255"
-                                   class="form-control"
-                                   placeholder="Example: Supplier delivery INV-001">
-
-                            <div class="form-text">
-                                Used when a row does not contain its own reason.
-                            </div>
-
-                        </div>
-
-                        <div class="form-check mt-3">
-
-                            <input id="skipInvalidRows"
-                                   name="skipInvalidRows"
-                                   class="form-check-input"
-                                   type="checkbox"
-                                   value="true">
-
-                            <label for="skipInvalidRows"
-                                   class="form-check-label">
-                                Skip invalid rows and continue importing valid rows
-                            </label>
-
-                        </div>
-
                         <div class="alert alert-warning mt-4 mb-0">
 
                             <i class="bi bi-exclamation-triangle me-1"></i>
 
-                            Stock will only be updated after every product and
-                            quantity has been validated.
+                            Nothing is saved yet. The next screen lets you review every
+                            row - including new products and unmatched categories/units -
+                            before anything is written to inventory.
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-4">
@@ -271,7 +232,7 @@
                                     disabled>
 
                                 <i class="bi bi-upload me-1"></i>
-                                Validate and Import
+                                Upload and Review
                             </button>
 
                         </div>
@@ -322,11 +283,12 @@
 
                         <div>
                             <div class="fw-semibold">
-                                Enter product stock
+                                Fill in product stock
                             </div>
 
                             <small class="text-muted">
-                                Use an existing product barcode and a positive quantity.
+                                Existing products are matched by barcode. Rows without a
+                                matching barcode are treated as new products.
                             </small>
                         </div>
 
@@ -340,11 +302,12 @@
 
                         <div>
                             <div class="fw-semibold">
-                                Upload and validate
+                                Upload and review
                             </div>
 
                             <small class="text-muted">
-                                Review any invalid rows before completing the import.
+                                Fix or map any flagged rows on the review screen before
+                                confirming.
                             </small>
                         </div>
 
@@ -376,36 +339,40 @@
 
                             <tbody>
                             <tr>
-                                <td>
-                                    <code>barcode</code>
-                                </td>
-                                <td>
-                                    <span class="badge bg-danger">
-                                        Yes
-                                    </span>
-                                </td>
+                                <td><code>barcode</code></td>
+                                <td><span class="badge bg-secondary">Recommended</span></td>
                             </tr>
-
                             <tr>
-                                <td>
-                                    <code>quantity</code>
-                                </td>
-                                <td>
-                                    <span class="badge bg-danger">
-                                        Yes
-                                    </span>
-                                </td>
+                                <td><code>product_name</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
                             </tr>
-
                             <tr>
-                                <td>
-                                    <code>reason</code>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">
-                                        No
-                                    </span>
-                                </td>
+                                <td><code>category</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>unit</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>size</code></td>
+                                <td><span class="badge bg-secondary">No</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>quantity</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>cost_price</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>mfd</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>exp</code></td>
+                                <td><span class="badge bg-danger">Yes</span></td>
                             </tr>
                             </tbody>
 
@@ -418,96 +385,6 @@
 
         </div>
 
-    </div>
-
-    <!-- Import result preview -->
-    <div th:if="${importResult != null}"
-         class="card border-0 shadow-sm mt-4">
-
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-
-            <h5 class="mb-0">
-                Import Result
-            </h5>
-
-            <div class="d-flex gap-2">
-
-                <span class="badge bg-success"
-                      th:text="${importResult.successCount} + ' Successful'">
-                    0 Successful
-                </span>
-
-                <span class="badge bg-danger"
-                      th:text="${importResult.failedCount} + ' Failed'">
-                    0 Failed
-                </span>
-
-            </div>
-
-        </div>
-
-        <div class="card-body">
-
-            <div class="table-responsive">
-
-                <table class="table table-hover align-middle">
-
-                    <thead class="table-light">
-                    <tr>
-                        <th>Row</th>
-                        <th>Barcode</th>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Status</th>
-                        <th>Message</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-
-                    <tr th:each="row : ${importResult.rows}">
-
-                        <td th:text="${row.rowNumber}">
-                            1
-                        </td>
-
-                        <td th:text="${row.barcode}">
-                            885000000001
-                        </td>
-
-                        <td th:text="${row.productName ?: '-'}">
-                            Coca-Cola
-                        </td>
-
-                        <td th:text="${row.quantity}">
-                            20
-                        </td>
-
-                        <td>
-                            <span th:if="${row.success}"
-                                  class="badge bg-success">
-                                Valid
-                            </span>
-
-                            <span th:unless="${row.success}"
-                                  class="badge bg-danger">
-                                Invalid
-                            </span>
-                        </td>
-
-                        <td th:text="${row.message}">
-                            Ready to import
-                        </td>
-
-                    </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
     </div>
 
 </main>

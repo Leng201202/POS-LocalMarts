@@ -24,8 +24,8 @@ public class LoyaltyConfigService {
     private final AuditService auditService;
 
     @Transactional
-    public LoyaltyConfig getConfig(Long createdBy) {
-        return findOrCreateConfig(createdBy);
+    public LoyaltyConfig getConfig() {
+        return findOrCreateConfig();
     }
 
     @Transactional
@@ -33,7 +33,7 @@ public class LoyaltyConfigService {
             LoyaltyConfigRequest request,
             Long updatedBy
     ) {
-        LoyaltyConfig config = findOrCreateConfig(updatedBy);
+        LoyaltyConfig config = findOrCreateConfig();
 
         validateBusinessRules(request, updatedBy, config.getId());
 
@@ -63,12 +63,12 @@ public class LoyaltyConfigService {
         return saved;
     }
 
-    private LoyaltyConfig findOrCreateConfig(Long actorId) {
+    private LoyaltyConfig findOrCreateConfig() {
         return loyaltyConfigRepository.findFirstByOrderByIdAsc()
-                .orElseGet(() -> createDefaultConfig(actorId));
+                .orElseGet(() -> createDefaultConfig());
     }
 
-    private LoyaltyConfig createDefaultConfig(Long actorId) {
+    private LoyaltyConfig createDefaultConfig() {
         LoyaltyConfig config = LoyaltyConfig.builder()
                 .minimumPurchaseAmount(new BigDecimal("100.00"))
                 .spendingAmount(new BigDecimal("10.00"))
@@ -79,10 +79,9 @@ public class LoyaltyConfigService {
                 .earningEnabled(true)
                 .redemptionEnabled(true)
                 .build();
-        config.setCreatedBy(actorId);
-        config.setUpdatedBy(actorId);
+        config.setCreatedBy(null);
         LoyaltyConfig saved = loyaltyConfigRepository.save(config);
-        auditService.logSuccess(actorId, AuditAction.CREATE, entity, saved.getId(), "Created default loyalty configuration");
+        auditService.logSuccess(null, AuditAction.CREATE, entity, saved.getId(), "Created default loyalty configuration");
         return saved;
     }
 

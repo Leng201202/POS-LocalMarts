@@ -61,7 +61,7 @@ public class CustomerService {
         customer.setName(customer.getName().trim());
         customer.setPhoneNumber(phoneNumber);
         customer.setPointBalance(0L);
-        customer.setTotalSpending(0);
+        customer.setTotalSpending(0L);
         customer.setActive(true);
         customer.setCreatedBy(createdBy);
         customer.setUpdatedBy(createdBy);

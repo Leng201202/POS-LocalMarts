@@ -20,10 +20,10 @@ public class CategoryService {
 
 
     public List<Category> findAll(){
-        return categoryRepository.findByDeletedAtIsNull();
+        return categoryRepository.findByActiveTrueAndDeletedAtIsNull();
     }
     public Category findById(Long id){
-        return categoryRepository.findByIdAndDeletedAtIsNull(id)
+        return categoryRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(()->new RuntimeException("Category is not found"));
 
     }
@@ -33,7 +33,7 @@ public class CategoryService {
         category.setName(normalize(category.getName()));
         category.setDescription(normalize(category.getDescription()));
 
-        if (categoryRepository.existsByNameIgnoreCaseAndDeletedAtIsNull(
+        if (categoryRepository.existsByNameIgnoreCaseAndActiveTrueAndDeletedAtIsNullAndDeletedAtIsNull(
                 category.getName())) {
 
             auditService.logFailed(
@@ -82,7 +82,7 @@ public class CategoryService {
 
         if (nameChanged
                 && categoryRepository
-                .existsByNameIgnoreCaseAndDeletedAtIsNull(
+                .existsByNameIgnoreCaseAndActiveTrueAndDeletedAtIsNullAndDeletedAtIsNull(
                         updatedCategory.getName())) {
 
             auditService.logFailed(
@@ -133,7 +133,7 @@ public class CategoryService {
     }
 
     public void softDelete(Long id, Long deletedBy){
-        Category category=categoryRepository.findByIdAndDeletedAtIsNull(id)
+        Category category=categoryRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new RuntimeException("Category not found"));
         category.setDeletedBy(deletedBy);
         category.setDeletedAt(LocalDateTime.now());
