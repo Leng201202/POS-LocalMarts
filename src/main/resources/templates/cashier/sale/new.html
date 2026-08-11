@@ -15,7 +15,7 @@
 
 <nav class="navbar bg-white shadow-sm">
     <div class="container-fluid px-4">
-        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+        <a class="navbar-brand fw-bold" th:href="@{/templates/cashier}">
             LocalMart POS
         </a>
 
@@ -46,65 +46,49 @@
         <div class="col-xl-7">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Find Products</h5>
+                    <h5 class="mb-0">Search Product</h5>
                 </div>
 
                 <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-5">
-                            <form th:action="@{/cashier/sale}"
-                                  method="get">
-                                <label for="barcodeSearch"
-                                       class="form-label">
-                                    Barcode
-                                </label>
+                    <form th:action="@{/cashier/sale}"
+                          method="get">
+                        <label for="productSearch"
+                               class="form-label">
+                            Barcode or product name
+                        </label>
 
-                                <div class="input-group">
-                                    <input id="barcodeSearch"
-                                           type="text"
-                                           name="query"
-                                           class="form-control"
-                                           placeholder="Enter or scan barcode">
+                        <div class="input-group">
+                            <input id="productSearch"
+                                   type="search"
+                                   name="query"
+                                   class="form-control"
+                                   th:value="${query}"
+                                   placeholder="Scan barcode or type product name">
 
-                                    <button type="submit"
-                                            class="btn btn-outline-primary">
-                                        Find
-                                    </button>
-                                </div>
-                            </form>
+                            <button type="submit"
+                                    class="btn btn-outline-primary">
+                                <i class="bi bi-search"></i>
+                                Search
+                            </button>
+
+                            <a th:href="@{/cashier/sale}"
+                               class="btn btn-outline-secondary">
+                                Reset
+                            </a>
                         </div>
-
-                        <div class="col-md-7">
-                            <form th:action="@{/cashier/sale}"
-                                  method="get">
-                                <label for="nameSearch"
-                                       class="form-label">
-                                    Product Name
-                                </label>
-
-                                <div class="input-group">
-                                    <input id="nameSearch"
-                                           type="search"
-                                           name="query"
-                                           class="form-control"
-                                           th:value="${query}"
-                                           placeholder="Search product name">
-
-                                    <button type="submit"
-                                            class="btn btn-outline-primary">
-                                        <i class="bi bi-search"></i>
-                                        Search
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+                    </form>
                 </div>
             </div>
 
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Products</h5>
+                    <h5 class="mb-0">
+                        Products
+                        <span class="text-muted"
+                              th:text="'(' + ${#lists.size(products)} + ')'">
+                            (0)
+                        </span>
+                    </h5>
                 </div>
 
                 <div class="card-body">
@@ -168,10 +152,16 @@
                                 </td>
 
                                 <td class="text-end">
-                                    <button type="button"
-                                            class="btn btn-sm btn-primary add-product"
-                                            th:disabled="${product.stockQuantity == null
+                                    <span th:if="${product.stockQuantity == null
+                                              || product.stockQuantity < 1}"
+                                          class="badge text-bg-secondary">
+                                        Out of Stock
+                                    </span>
+
+                                    <button th:unless="${product.stockQuantity == null
                                                 || product.stockQuantity < 1}"
+                                            type="button"
+                                            class="btn btn-sm btn-primary add-product"
                                             th:attr="
                                                 data-product-id=${product.id},
                                                 data-product-name=${product.name},

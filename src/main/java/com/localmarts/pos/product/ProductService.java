@@ -30,6 +30,21 @@ public class ProductService {
         return productRepository.findByDeletedAtIsNullOrderByNameAsc();
     }
 
+    public List<Product> findAllActive() {
+        return productRepository
+                .findAllByActiveTrueAndDeletedAtIsNullOrderByNameAsc();
+    }
+
+    public List<Product> searchActive(String query) {
+        String normalizedQuery = query == null ? "" : query.trim();
+
+        if (normalizedQuery.isEmpty()) {
+            return findAllActive();
+        }
+
+        return productRepository.searchActiveByNameOrBarcode(normalizedQuery);
+    }
+
     public Product findById(Long id) {
         return productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));

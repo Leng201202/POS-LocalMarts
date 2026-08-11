@@ -3,6 +3,7 @@ package com.localmarts.pos.sale;
 import com.localmarts.pos.audit.AuditService;
 import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.product.ProductRepository;
+import com.localmarts.pos.product.ProductService;
 import com.localmarts.pos.product.entity.Product;
 import com.localmarts.pos.sale.dto.CreateSaleRequest;
 import com.localmarts.pos.sale.dto.SaleItemRequest;
@@ -21,7 +22,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,17 +37,20 @@ public class SaleService {
 
     private final SaleRepository saleRepository;
     private final ProductRepository productRepository;
+    private final ProductService productService;
     private final UserRepository userRepository;
     private final AuditService auditService;
 
     public SaleService(
             SaleRepository saleRepository,
             ProductRepository productRepository,
+            ProductService productService,
             UserRepository userRepository,
             AuditService auditService) {
 
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
+        this.productService = productService;
         this.userRepository = userRepository;
         this.auditService = auditService;
     }
@@ -168,26 +171,7 @@ public class SaleService {
 
     @Transactional(readOnly = true)
     public List<Product> searchProducts(String query) {
-        String normalizedQuery = query == null ? "" : query.trim();
-
-        if (!normalizedQuery.isEmpty()) {
-            return productRepository
-                    .findFirstByBarcodeAndActiveTrueAndDeletedAtIsNull(
-                            normalizedQuery
-                    )
-                    .map(List::of)
-                    .orElseGet(() ->
-                            productRepository
-                                    .findTop30ByNameContainingIgnoreCaseAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
-                                            normalizedQuery
-                                    )
-                    );
-        }
-
-        return productRepository
-                .findTop30ByNameContainingIgnoreCaseAndActiveTrueAndDeletedAtIsNullOrderByNameAsc(
-                        ""
-                );
+        return productService.searchActive(query);
     }
 
     @Transactional(readOnly = true)

@@ -1,5 +1,6 @@
 package com.localmarts.pos.sale.entity;
 
+import com.localmarts.pos.customer.entity.Customer;
 import com.localmarts.pos.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -45,6 +46,10 @@ public class Sale {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cashier_id", nullable = false)
     private User cashier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
 
     @Column(name = "subtotal", nullable = false, precision = 14, scale = 2)
     private BigDecimal subtotal;

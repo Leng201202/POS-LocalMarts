@@ -71,7 +71,7 @@ public class SaleController {
         }
 
         addSalePageData(model, query);
-        return "cashier/sale";
+        return "cashier/sale/new";
     }
 
     @PostMapping("/sale/complete")
@@ -85,7 +85,7 @@ public class SaleController {
 
         if (bindingResult.hasErrors()) {
             addSalePageData(model, "");
-            return "cashier/sale";
+            return "cashier/sale/new";
         }
 
         try {
@@ -106,7 +106,7 @@ public class SaleController {
         } catch (RuntimeException exception) {
             model.addAttribute("error", exception.getMessage());
             addSalePageData(model, "");
-            return "cashier/sale";
+            return "cashier/sale/new";
         }
     }
 
