@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -138,5 +139,24 @@ public class CustomerService {
     public Customer findById(Long id){
         return customerRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(()->new RuntimeException("Customer is not found"));
+    }
+
+    public Optional<Customer> findActiveByPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return Optional.empty();
+        }
+
+        return customerRepository
+                .findByPhoneNumberAndActiveTrueAndDeletedAtIsNull(
+                        phoneNumber.trim()
+                );
+    }
+
+    public Optional<Customer> findActiveById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        return customerRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id);
     }
 }

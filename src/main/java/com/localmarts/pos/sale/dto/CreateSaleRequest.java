@@ -17,6 +17,8 @@ public class CreateSaleRequest {
     @Valid
     private List<SaleItemRequest> items = new ArrayList<>();
 
+    private Long customerId;
+
     @NotNull(message = "Paid amount is required")
     @DecimalMin(value = "0.00", message = "Paid amount cannot be negative")
     private BigDecimal paidAmount;
@@ -33,6 +35,14 @@ public class CreateSaleRequest {
 
     public void setItems(List<SaleItemRequest> items) {
         this.items = items;
+    }
+
+    public Long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
     }
 
     public BigDecimal getPaidAmount() {

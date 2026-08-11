@@ -1,6 +1,8 @@
 package com.localmarts.pos.sale;
 
 import com.localmarts.pos.common.CurrentUserService;
+import com.localmarts.pos.customer.CustomerService;
+import com.localmarts.pos.customer.entity.Customer;
 import com.localmarts.pos.sale.dto.CreateSaleRequest;
 import com.localmarts.pos.sale.entity.PaymentMethod;
 import com.localmarts.pos.sale.entity.Sale;
@@ -24,13 +26,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class SaleController {
 
     private final SaleService saleService;
+    private final CustomerService customerService;
     private final CurrentUserService currentUserService;
 
     public SaleController(
             SaleService saleService,
+            CustomerService customerService,
             CurrentUserService currentUserService) {
 
         this.saleService = saleService;
+        this.customerService = customerService;
         this.currentUserService = currentUserService;
     }
 
@@ -61,16 +66,20 @@ public class SaleController {
     @GetMapping("/sale")
     public String salePage(
             @RequestParam(defaultValue = "") String query,
+            @RequestParam(required = false) String customerPhone,
             Model model) {
 
-        if (!model.containsAttribute("saleRequest")) {
-            model.addAttribute(
-                    "saleRequest",
-                    new CreateSaleRequest()
-            );
+        CreateSaleRequest saleRequest =
+                (CreateSaleRequest) model.getAttribute("saleRequest");
+
+        if (saleRequest == null) {
+            saleRequest = new CreateSaleRequest();
+            model.addAttribute("saleRequest", saleRequest);
         }
 
         addSalePageData(model, query);
+        addCustomerLookupData(model, saleRequest, customerPhone);
+
         return "cashier/sale/new";
     }
 
@@ -85,6 +94,7 @@ public class SaleController {
 
         if (bindingResult.hasErrors()) {
             addSalePageData(model, "");
+            addCustomerLookupData(model, request, null);
             return "cashier/sale/new";
         }
 
@@ -106,6 +116,7 @@ public class SaleController {
         } catch (RuntimeException exception) {
             model.addAttribute("error", exception.getMessage());
             addSalePageData(model, "");
+            addCustomerLookupData(model, request, null);
             return "cashier/sale/new";
         }
     }
@@ -139,5 +150,38 @@ public class SaleController {
                 "paymentMethods",
                 PaymentMethod.values()
         );
+    }
+
+    private void addCustomerLookupData(
+            Model model,
+            CreateSaleRequest saleRequest,
+            String customerPhone) {
+
+        Customer resolvedCustomer = null;
+
+        if (customerPhone != null && !customerPhone.isBlank()) {
+            resolvedCustomer = customerService
+                    .findActiveByPhoneNumber(customerPhone)
+                    .orElse(null);
+
+            saleRequest.setCustomerId(
+                    resolvedCustomer == null
+                            ? null
+                            : resolvedCustomer.getId()
+            );
+
+        } else if (saleRequest.getCustomerId() != null) {
+            resolvedCustomer = customerService
+                    .findActiveById(saleRequest.getCustomerId())
+                    .orElse(null);
+        }
+
+        model.addAttribute(
+                "customerPhone",
+                resolvedCustomer != null
+                        ? resolvedCustomer.getPhoneNumber()
+                        : customerPhone
+        );
+        model.addAttribute("resolvedCustomer", resolvedCustomer);
     }
 }

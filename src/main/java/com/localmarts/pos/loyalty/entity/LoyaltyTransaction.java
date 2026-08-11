@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @Builder
 public class LoyaltyTransaction {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY,optional = false)

@@ -16,6 +16,8 @@ public interface CustomerRepository extends JpaRepository<Customer,Long> {
     Optional<Customer> findByPhoneNumberAndDeletedAtIsNull(String phone);
     Optional<Customer> findByIdAndDeletedAtIsNull(Long id);
     boolean existsByPhoneNumberAndActiveTrueAndDeletedAtIsNull(String phone);
+    Optional<Customer> findByPhoneNumberAndActiveTrueAndDeletedAtIsNull(String phone);
+    Optional<Customer> findByIdAndActiveTrueAndDeletedAtIsNull(Long id);
 
     @Query("""
         SELECT c

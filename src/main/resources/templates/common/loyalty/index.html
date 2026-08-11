@@ -174,7 +174,7 @@
                         <h4 class="fw-bold mb-0"
                             th:text="${#lists.size(
                                 transactions.?[
-                                    transactionType.name() == 'EARN'
+                                    type.name() == 'EARN'
                                 ]
                             )}">
                             0
@@ -215,7 +215,7 @@
                         <h4 class="fw-bold mb-0"
                             th:text="${#lists.size(
                                 transactions.?[
-                                    transactionType.name() == 'REDEEM'
+                                    type.name() == 'REDEEM'
                                 ]
                             )}">
                             0
@@ -457,7 +457,7 @@
 
                             <!-- EARN -->
 
-                            <span th:if="${transaction.transactionType.name() == 'EARN'}"
+                            <span th:if="${transaction.type.name() == 'EARN'}"
                                   class="badge
                                          bg-success-subtle
                                          text-success
@@ -471,7 +471,7 @@
 
                             <!-- REDEEM -->
 
-                            <span th:if="${transaction.transactionType.name() == 'REDEEM'}"
+                            <span th:if="${transaction.type.name() == 'REDEEM'}"
                                   class="badge
                                          bg-danger-subtle
                                          text-danger
@@ -485,7 +485,7 @@
 
                             <!-- REFUND EARN REVERSAL -->
 
-                            <span th:if="${transaction.transactionType.name() == 'REFUND_EARN_REVERSAL'}"
+                            <span th:if="${transaction.type.name() == 'REFUND_EARN_REVERSAL'}"
                                   class="badge
                                          bg-warning-subtle
                                          text-warning-emphasis
@@ -499,7 +499,7 @@
 
                             <!-- REFUND REDEEM RESTORE -->
 
-                            <span th:if="${transaction.transactionType.name() == 'REFUND_REDEEM_RESTORE'}"
+                            <span th:if="${transaction.type.name() == 'REFUND_REDEEM_RESTORE'}"
                                   class="badge
                                          bg-info-subtle
                                          text-info-emphasis
@@ -513,7 +513,7 @@
 
                             <!-- ADJUSTMENT -->
 
-                            <span th:if="${transaction.transactionType.name() == 'ADJUSTMENT'}"
+                            <span th:if="${transaction.type.name() == 'ADJUSTMENT'}"
                                   class="badge
                                          bg-secondary-subtle
                                          text-secondary-emphasis
@@ -531,19 +531,19 @@
 
                         <td class="text-end">
 
-                            <span th:if="${transaction.point > 0}"
+                            <span th:if="${transaction.points > 0}"
                                   class="point-positive"
-                                  th:text="'+' + ${transaction.point}">
+                                  th:text="'+' + ${transaction.points}">
                                 +10
                             </span>
 
-                            <span th:if="${transaction.point < 0}"
+                            <span th:if="${transaction.points < 0}"
                                   class="point-negative"
-                                  th:text="${transaction.point}">
+                                  th:text="${transaction.points}">
                                 -100
                             </span>
 
-                            <span th:if="${transaction.point == 0}"
+                            <span th:if="${transaction.points == 0}"
                                   class="text-muted">
                                 0
                             </span>

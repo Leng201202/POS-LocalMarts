@@ -2,6 +2,10 @@ package com.localmarts.pos.sale;
 
 import com.localmarts.pos.audit.AuditService;
 import com.localmarts.pos.audit.utils.AuditAction;
+import com.localmarts.pos.customer.CustomerService;
+import com.localmarts.pos.customer.entity.Customer;
+import com.localmarts.pos.inventory.service.InventoryService;
+import com.localmarts.pos.loyalty.service.LoyaltyService;
 import com.localmarts.pos.product.ProductRepository;
 import com.localmarts.pos.product.ProductService;
 import com.localmarts.pos.product.entity.Product;
@@ -38,6 +42,9 @@ public class SaleService {
     private final SaleRepository saleRepository;
     private final ProductRepository productRepository;
     private final ProductService productService;
+    private final CustomerService customerService;
+    private final LoyaltyService loyaltyService;
+    private final InventoryService inventoryService;
     private final UserRepository userRepository;
     private final AuditService auditService;
 
@@ -45,12 +52,18 @@ public class SaleService {
             SaleRepository saleRepository,
             ProductRepository productRepository,
             ProductService productService,
+            CustomerService customerService,
+            LoyaltyService loyaltyService,
+            InventoryService inventoryService,
             UserRepository userRepository,
             AuditService auditService) {
 
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
         this.productService = productService;
+        this.customerService = customerService;
+        this.loyaltyService = loyaltyService;
+        this.inventoryService = inventoryService;
         this.userRepository = userRepository;
         this.auditService = auditService;
     }
@@ -74,12 +87,15 @@ public class SaleService {
                         )
                 );
 
+        Customer customer = resolveMemberCustomer(request.getCustomerId());
+
         Map<Long, Integer> requestedQuantities =
                 combineRequestedQuantities(request.getItems());
 
         Sale sale = Sale.builder()
                 .invoiceNo(generateInvoiceNo())
                 .cashier(cashier)
+                .customer(customer)
                 .subtotal(ZERO_MONEY)
                 .totalDiscount(ZERO_MONEY)
                 .pointDiscount(ZERO_MONEY)
@@ -118,17 +134,12 @@ public class SaleService {
             subtotal = subtotal.add(item.getGrossSubtotal());
             totalDiscount = totalDiscount.add(item.getDiscountAmount());
 
-            int newStockQuantity =
-                    product.getStockQuantity() - entry.getValue();
-
-            if (newStockQuantity < 0) {
-                throw new IllegalArgumentException(
-                        "Insufficient stock for " + product.getName()
-                );
-            }
-
-            product.setStockQuantity(newStockQuantity);
-            productRepository.save(product);
+            inventoryService.sale(
+                    product.getId(),
+                    entry.getValue(),
+                    "Sale checkout " + sale.getInvoiceNo(),
+                    actorId
+            );
         }
 
         BigDecimal totalAmount = money(
@@ -157,6 +168,19 @@ public class SaleService {
         sale.setPaymentStatus(PaymentStatus.PAID);
 
         Sale savedSale = saleRepository.save(sale);
+
+        if (customer != null) {
+            long earnedPoints = loyaltyService.earnPoint(
+                    customer,
+                    savedSale,
+                    totalAmount
+            );
+
+            if (earnedPoints > 0) {
+                savedSale.setPointEarned((int) earnedPoints);
+                savedSale = saleRepository.save(savedSale);
+            }
+        }
 
         auditService.logSuccess(
                 actorId,
@@ -229,6 +253,19 @@ public class SaleService {
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Sale receipt not found"
+                        )
+                );
+    }
+
+    private Customer resolveMemberCustomer(Long customerId) {
+        if (customerId == null) {
+            return null;
+        }
+
+        return customerService.findActiveById(customerId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Selected member customer was not found"
                         )
                 );
     }
