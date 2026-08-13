@@ -1,0 +1,237 @@
+:root {
+    color-scheme: dark;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #0f1115;
+    color: #f1f3f5;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.scanner-app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================= HEADER ================= */
+
+.scanner-header {
+    padding: 14px 16px calc(10px + env(safe-area-inset-top, 0px));
+    padding-top: max(14px, env(safe-area-inset-top, 0px));
+    background: #161923;
+    border-bottom: 1px solid #262b38;
+    text-align: center;
+}
+
+.scanner-header-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+
+.scanner-terminal {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #9aa3b2;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.connection-status-pending {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+.connection-status-pending .status-dot { background: #ffc107; }
+
+.connection-status-connected {
+    background: rgba(40, 167, 69, 0.15);
+    color: #2fbf5f;
+}
+.connection-status-connected .status-dot { background: #2fbf5f; }
+
+.connection-status-disconnected {
+    background: rgba(220, 53, 69, 0.15);
+    color: #ff5c6c;
+}
+.connection-status-disconnected .status-dot { background: #ff5c6c; }
+
+/* ================= MAIN ================= */
+
+.scanner-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* ================= CAMERA ================= */
+
+.camera-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #262b38;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.camera-preview.active {
+    display: block;
+}
+
+.camera-idle-state {
+    text-align: center;
+    color: #6b7280;
+}
+
+.camera-idle-state.d-none {
+    display: none;
+}
+
+.camera-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.camera-overlay.active {
+    display: flex;
+}
+
+.scan-guide {
+    width: 78%;
+    height: 2px;
+    background: rgba(52, 199, 89, 0.9);
+    box-shadow: 0 0 10px 2px rgba(52, 199, 89, 0.7);
+    border-top: 1px dashed rgba(255, 255, 255, 0.5);
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+}
+
+.scan-guide-label {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: #d1d5db;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+/* ================= RESULT ================= */
+
+.scan-result-card {
+    width: 100%;
+    background: #161923;
+    border: 1px solid #262b38;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.scan-result-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #8a93a3;
+    margin-bottom: 4px;
+}
+
+.scan-result-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+}
+
+/* ================= FEEDBACK ================= */
+
+.feedback-banner {
+    width: 100%;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.15s ease;
+}
+
+.feedback-banner.success {
+    background: rgba(47, 191, 95, 0.18);
+    color: #4ee081;
+}
+
+.feedback-banner.error {
+    background: rgba(255, 92, 108, 0.18);
+    color: #ff8b96;
+}
+
+.scanner-status-line {
+    color: #9aa3b2;
+    font-size: 0.9rem;
+}
+
+/* ================= CONTROLS ================= */
+
+.scanner-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.scanner-controls .btn {
+    padding: 12px;
+    border-radius: 12px;
+}
+
+/* Flash feedback pulse on the camera viewport */
+
+.camera-viewport.flash-success {
+    box-shadow: 0 0 0 4px rgba(47, 191, 95, 0.9) inset;
+}
+
+.camera-viewport.flash-error {
+    box-shadow: 0 0 0 4px rgba(255, 92, 108, 0.9) inset;
+}

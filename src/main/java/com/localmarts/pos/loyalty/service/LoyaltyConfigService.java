@@ -79,9 +79,9 @@ public class LoyaltyConfigService {
                 .earningEnabled(true)
                 .redemptionEnabled(true)
                 .build();
-        config.setCreatedBy(null);
+        config.setCreatedBy(0L);
         LoyaltyConfig saved = loyaltyConfigRepository.save(config);
-        auditService.logSuccess(null, AuditAction.CREATE, entity, saved.getId(), "Created default loyalty configuration");
+        auditService.logSuccess(0L, AuditAction.CREATE, entity, saved.getId(), "Created default loyalty configuration");
         return saved;
     }
 

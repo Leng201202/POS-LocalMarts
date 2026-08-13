@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>LocalMart Scanner</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+
+    <link th:href="@{/scanner/scanner.css}" rel="stylesheet">
+</head>
+
+<body>
+
+<div id="scannerApp"
+     class="scanner-app"
+     th:data-token="${token}"
+     th:data-terminal-id="${terminalId}">
+
+    <!-- ================= HEADER ================= -->
+
+    <header class="scanner-header">
+
+        <div class="scanner-header-title">
+            <i class="bi bi-upc-scan me-2"></i>
+            LocalMart Scanner
+        </div>
+
+        <div id="connectionStatus" class="connection-status connection-status-pending">
+            <span class="status-dot"></span>
+            <span id="connectionStatusText">Connecting...</span>
+        </div>
+
+        <div class="scanner-terminal">
+            Terminal: <strong th:text="${terminalId}">POS-01</strong>
+        </div>
+
+    </header>
+
+
+    <!-- ================= MAIN ================= -->
+
+    <main class="scanner-main">
+
+        <!-- Camera viewport -->
+
+        <div id="cameraViewport" class="camera-viewport">
+
+            <video id="cameraPreview" class="camera-preview" playsinline muted></video>
+
+            <div id="cameraOverlay" class="camera-overlay">
+                <div class="scan-guide"></div>
+                <p class="scan-guide-label">Scan barcode</p>
+            </div>
+
+            <div id="cameraIdleState" class="camera-idle-state">
+                <i class="bi bi-camera fs-1 mb-2"></i>
+                <p class="mb-0">Camera is off</p>
+            </div>
+
+        </div>
+
+
+        <!-- Last scan -->
+
+        <div class="scan-result-card">
+
+            <div class="scan-result-label">Last Scan</div>
+
+            <div id="lastScanValue" class="scan-result-value">—</div>
+
+        </div>
+
+
+        <!-- Feedback banner -->
+
+        <div id="feedbackBanner" class="feedback-banner d-none">
+            <i id="feedbackIcon" class="bi me-2"></i>
+            <span id="feedbackText"></span>
+        </div>
+
+
+        <!-- Status line -->
+
+        <div class="scanner-status-line">
+            Status: <span id="scannerStatusText">Initializing...</span>
+        </div>
+
+
+        <!-- Controls -->
+
+        <div class="scanner-controls">
+
+            <button id="torchButton" type="button" class="btn btn-outline-secondary d-none">
+                <i class="bi bi-flashlight me-2"></i>
+                <span id="torchButtonLabel">Flashlight</span>
+            </button>
+
+            <button id="startButton" type="button" class="btn btn-primary btn-lg">
+                <i class="bi bi-play-fill me-2"></i>
+                Start Scanner
+            </button>
+
+            <button id="stopButton" type="button" class="btn btn-danger btn-lg d-none">
+                <i class="bi bi-stop-fill me-2"></i>
+                Stop Scanner
+            </button>
+
+        </div>
+
+    </main>
+
+</div>
+
+<!--
+    ZXing (barcode/QR decoding) - loaded from CDN for development only.
+
+    OFFLINE / PRODUCTION NOTE:
+    Download this file and serve it locally so LocalMart works without
+    internet access:
+
+      https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js
+      -> save as src/main/resources/static/scanner/lib/zxing.min.js
+      -> change the src below to: /scanner/lib/zxing.min.js
+-->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+
+<script th:src="@{/scanner/scanner.js}"></script>
+
+</body>
+</html>

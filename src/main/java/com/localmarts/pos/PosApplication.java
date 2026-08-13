@@ -2,19 +2,21 @@ package com.localmarts.pos;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @SpringBootApplication
+@EnableScheduling
 public class PosApplication {
 
 	public static void main(String[] args) throws IOException {
 		createDirectory();
         SpringApplication.run(PosApplication.class, args);
         try {
-            new ProcessBuilder("open", "http://localhost:8080").start();
+            new ProcessBuilder("open", "https://localhost:8080").start();
         } catch (Exception e) {
             e.printStackTrace();
         }

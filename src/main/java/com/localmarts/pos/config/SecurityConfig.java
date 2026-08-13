@@ -1,5 +1,7 @@
 package com.localmarts.pos.config;
 
+import com.localmarts.pos.scanner.ScannerSessionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -12,7 +14,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final ScannerSessionService scannerSessionService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -20,6 +25,10 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**").permitAll()
+                        // Phone scanner routes: the phone never logs in as ADMIN/CASHIER.
+                        // The scanner token in the URL is what authorizes these calls.
+                        .requestMatchers("/scanner/**", "/api/scanner/**").permitAll()
+                        .requestMatchers("/pos/scanner", "/pos/scanner/**").hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers(
                                 "/admin", "/admin/**",
                                 "/users", "/users/**",
@@ -33,6 +42,12 @@ public class SecurityConfig {
                         .requestMatchers("/cashier", "/cashier/**").hasAnyRole("ADMIN", "CASHIER")
                         .anyRequest().authenticated()
                 )
+                // The phone holds no cashier session/cookie, so it can never carry a
+                // Spring Security CSRF token. Authorization for these endpoints comes
+                // from the scanner token itself, not from session/cookie state, so
+                // exempting just this API from CSRF does not weaken the authenticated
+                // POS routes (which keep CSRF protection).
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/scanner/**"))
                 .formLogin(form -> form
                         .loginPage("/")
                         .loginProcessingUrl("/login")
@@ -52,6 +67,9 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/?logout")
+                        // A cashier logging out means the till is no longer staffed,
+                        // so any paired phone scanner should be dropped with it.
+                        .addLogoutHandler((request, response, authentication) -> scannerSessionService.disconnectAll())
                         .permitAll()
                 );
 
