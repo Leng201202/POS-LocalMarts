@@ -140,6 +140,22 @@ public class SaleController {
         return "cashier/receipt";
     }
 
+    @GetMapping("/sales")
+    public String salesHistory(
+            Authentication authentication,
+            Model model) {
+
+        Long cashierId =
+                currentUserService.getCurrentUserId(authentication);
+
+        model.addAttribute(
+                "sales",
+                saleService.getSalesHistory(cashierId)
+        );
+
+        return "cashier/sale/index";
+    }
+
     private void addSalePageData(Model model, String query) {
         model.addAttribute("query", query);
         model.addAttribute(

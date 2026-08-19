@@ -234,6 +234,12 @@ public class SaleService {
     }
 
     @Transactional(readOnly = true)
+    public List<Sale> getSalesHistory(Long cashierId) {
+        return saleRepository
+                .findByCashierIdOrderByTimestampDesc(cashierId);
+    }
+
+    @Transactional(readOnly = true)
     public Sale findReceipt(
             Long saleId,
             Long actorId,

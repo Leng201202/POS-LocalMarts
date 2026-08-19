@@ -48,6 +48,9 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     List<Sale> findTop10ByCashierIdOrderByTimestampDesc(Long cashierId);
 
+    @EntityGraph(attributePaths = "customer")
+    List<Sale> findByCashierIdOrderByTimestampDesc(Long cashierId);
+
     @EntityGraph(attributePaths = {"cashier", "items"})
     @Query("select distinct s from Sale s where s.id = :id")
     Optional<Sale> findDetailedById(@Param("id") Long id);
