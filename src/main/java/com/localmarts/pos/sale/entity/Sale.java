@@ -1,6 +1,7 @@
 package com.localmarts.pos.sale.entity;
 
 import com.localmarts.pos.customer.entity.Customer;
+import com.localmarts.pos.loyalty.entity.LoyaltyConfig;
 import com.localmarts.pos.user.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

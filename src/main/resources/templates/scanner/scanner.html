@@ -58,7 +58,8 @@
 
             <div id="cameraOverlay" class="camera-overlay">
                 <div class="scan-guide"></div>
-                <p class="scan-guide-label">Scan barcode</p>
+                <p class="scan-guide-label">Place barcode in the frame</p>
+                <p class="scan-guide-hint">Hold steady, 15–30 cm away</p>
             </div>
 
             <div id="cameraIdleState" class="camera-idle-state">
@@ -98,6 +99,11 @@
         <!-- Controls -->
 
         <div class="scanner-controls">
+
+            <div id="zoomControls" class="zoom-controls d-none">
+                <span class="zoom-controls-label">Zoom</span>
+                <div id="zoomButtons" class="zoom-buttons"></div>
+            </div>
 
             <button id="torchButton" type="button" class="btn btn-outline-secondary d-none">
                 <i class="bi bi-flashlight me-2"></i>

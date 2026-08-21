@@ -141,20 +141,29 @@ body {
 }
 
 .scan-guide {
-    width: 78%;
-    height: 2px;
-    background: rgba(52, 199, 89, 0.9);
-    box-shadow: 0 0 10px 2px rgba(52, 199, 89, 0.7);
-    border-top: 1px dashed rgba(255, 255, 255, 0.5);
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+    width: 84%;
+    max-width: 360px;
+    aspect-ratio: 5 / 2;
+    border: 3px solid rgba(52, 199, 89, 0.9);
+    border-radius: 14px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 12px 2px rgba(52, 199, 89, 0.5);
 }
 
 .scan-guide-label {
-    margin-top: 10px;
+    margin-top: 12px;
     font-size: 0.8rem;
     color: #d1d5db;
     background: rgba(0, 0, 0, 0.45);
     padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.scan-guide-hint {
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: #aeb6c2;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 3px 10px;
     border-radius: 999px;
 }
 
@@ -226,6 +235,41 @@ body {
     border-radius: 12px;
 }
 
+/* ================= ZOOM ================= */
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.zoom-controls-label {
+    font-size: 0.8rem;
+    color: #9aa3b2;
+}
+
+.zoom-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.zoom-btn {
+    border: 1px solid #262b38;
+    background: #161923;
+    color: #d1d5db;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+}
+
+.zoom-btn.active {
+    background: rgba(52, 199, 89, 0.18);
+    border-color: rgba(52, 199, 89, 0.6);
+    color: #4ee081;
+}
+
 /* Flash feedback pulse on the camera viewport */
 
 .camera-viewport.flash-success {
@@ -234,4 +278,80 @@ body {
 
 .camera-viewport.flash-error {
     box-shadow: 0 0 0 4px rgba(255, 92, 108, 0.9) inset;
+}
+
+/* ================= SCAN RESULT PAGE ================= */
+
+.product-card {
+    width: 100%;
+    background: #161923;
+    border: 1px solid #262b38;
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    margin-top: 12px;
+}
+
+.product-card-icon {
+    font-size: 2.4rem;
+    color: #2fbf5f;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.product-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.product-price {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #4ee081;
+    margin-top: 4px;
+}
+
+.product-meta {
+    margin-top: 20px;
+    border-top: 1px solid #262b38;
+    padding-top: 14px;
+    text-align: left;
+}
+
+.product-meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 0.9rem;
+}
+
+.product-meta-row span:first-child {
+    color: #9aa3b2;
+}
+
+.not-found-card {
+    width: 100%;
+    background: #161923;
+    border: 1px solid #262b38;
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    color: #ffc107;
+    margin-top: 12px;
+}
+
+.not-found-barcode {
+    margin-top: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #f1f3f5;
+    word-break: break-all;
+}
+
+.scan-next-btn {
+    width: 100%;
+    margin-top: auto;
+    padding: 14px;
+    border-radius: 12px;
 }

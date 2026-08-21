@@ -6,6 +6,36 @@
     const DUPLICATE_COOLDOWN_MS = 1500;
     const FEEDBACK_DISPLAY_MS = 1400;
 
+    // Brief pause after a successful scan so the cashier sees/hears/feels
+    // the success feedback before the page navigates to the result screen.
+    const RESULT_NAV_DELAY_MS = 400;
+
+    // Preferred capture resolution for barcode scanning. These are "ideal"
+    // hints only - the browser/device picks the closest supported mode, so
+    // this is safe on low-end hardware too.
+    //
+    // NOTE: ZXing-js decodes every frame in pure JS on a canvas sized to the
+    // camera's *actual* captured resolution - it does not internally
+    // downscale. 1920x1080 is sharp but can be too slow to decode in real
+    // time on mid-range phones, which looks like "camera is fine but never
+    // detects." 1280x720 is still plenty sharp for retail barcodes and
+    // decodes much faster. Raise it only if testing shows a device handles
+    // 1080p decode smoothly.
+    const IDEAL_WIDTH = 1280;
+    const IDEAL_HEIGHT = 720;
+    const IDEAL_FRAME_RATE = 30;
+
+    // Zoom levels we offer when the device reports zoom support, clipped to
+    // whatever range the hardware actually allows.
+    const ZOOM_LEVELS = [1, 1.5, 2];
+
+    // Lens labels that indicate a non-main rear camera (ultra-wide/tele/macro
+    // lenses focus poorly on close-up barcodes). Used only as a best-effort
+    // heuristic on Android/Chrome - iOS typically only exposes one "Back
+    // Camera" label, so this never triggers there.
+    const NON_MAIN_LENS_PATTERN = /ultra\s*-?\s*wide|wide\s*angle|tele(photo)?|macro/i;
+    const FRONT_LENS_PATTERN = /front|user|face/i;
+
     // Built lazily (not at parse time) so a blocked/failed CDN load can't
     // crash this entire script before the Start/Stop button handlers attach.
     function getSupportedFormats() {
@@ -45,6 +75,9 @@
     const torchButton = document.getElementById("torchButton");
     const torchButtonLabel = document.getElementById("torchButtonLabel");
 
+    const zoomControls = document.getElementById("zoomControls");
+    const zoomButtons = document.getElementById("zoomButtons");
+
     // ================= STATE =================
 
     let stream = null;
@@ -58,6 +91,11 @@
     let lastScanTime = 0;
     let feedbackTimer = null;
     let cameraAvailable = true;
+
+    // Set right before we navigate to the scan-result page ourselves, so the
+    // pagehide/visibilitychange handlers below know this isn't the phone
+    // actually leaving - the scanner session should stay connected.
+    let navigatingToResult = false;
 
     // ================= CONNECTION STATUS =================
 
@@ -94,7 +132,7 @@
 
     // Best-effort: tell the POS we're leaving when the tab is closed/backgrounded.
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden" && navigator.sendBeacon) {
+        if (document.visibilityState === "hidden" && !navigatingToResult && navigator.sendBeacon) {
             navigator.sendBeacon("/api/scanner/session/" + token + "/disconnect");
         }
     });
@@ -151,9 +189,12 @@
             case "PermissionDeniedError":
                 return "Camera permission denied. Please allow camera access in your browser settings and try again.";
             case "NotFoundError":
-            case "OverconstrainedError":
                 return "No usable camera was found on this device.";
+            case "OverconstrainedError":
+            case "ConstraintNotSatisfiedError":
+                return "This device does not support the requested camera settings.";
             case "NotReadableError":
+            case "TrackStartError":
                 return "The camera is already in use by another app.";
             default:
                 return "Unable to access the camera on this device.";
@@ -179,10 +220,112 @@
         return true;
     }
 
+    // ================= CAMERA ACQUISITION =================
+
+    // Requests the rear camera at a good resolution for barcode scanning.
+    // Uses "ideal" hints only, and falls back to a bare-minimum request if
+    // the richer constraints are rejected (OverconstrainedError), so this
+    // never breaks devices/browsers with limited constraint support.
+    async function acquireCameraStream() {
+        const richConstraints = {
+            audio: false,
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: IDEAL_WIDTH },
+                height: { ideal: IDEAL_HEIGHT },
+                frameRate: { ideal: IDEAL_FRAME_RATE }
+            }
+        };
+
+        try {
+            return await navigator.mediaDevices.getUserMedia(richConstraints);
+        } catch (error) {
+            if (error && error.name === "OverconstrainedError") {
+                console.warn("[Scanner] Rich camera constraints rejected, retrying with minimal constraints.", error);
+                return await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: { ideal: "environment" } }
+                });
+            }
+            throw error;
+        }
+    }
+
+    // Best-effort: if the active rear lens looks like an ultra-wide/tele/macro
+    // lens (poor close-focus behaviour on Android multi-camera phones), try
+    // switching to a better-labelled rear lens. Any failure just keeps the
+    // original stream - this must never block scanning from starting.
+    async function preferMainRearCamera(initialStream) {
+        try {
+            const activeTrack = initialStream.getVideoTracks()[0];
+            const activeLabel = activeTrack.label || "";
+
+            if (!NON_MAIN_LENS_PATTERN.test(activeLabel)) {
+                return initialStream;
+            }
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const rearDevices = devices.filter((device) =>
+                device.kind === "videoinput" && !FRONT_LENS_PATTERN.test(device.label)
+            );
+            const mainRear = rearDevices.find((device) => !NON_MAIN_LENS_PATTERN.test(device.label));
+
+            if (!mainRear) {
+                return initialStream;
+            }
+
+            const betterStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    deviceId: { exact: mainRear.deviceId },
+                    width: { ideal: IDEAL_WIDTH },
+                    height: { ideal: IDEAL_HEIGHT },
+                    frameRate: { ideal: IDEAL_FRAME_RATE }
+                }
+            });
+
+            initialStream.getTracks().forEach((track) => track.stop());
+            return betterStream;
+        } catch (error) {
+            console.warn("[Scanner] Skipping main-lens reselection.", error);
+            return initialStream;
+        }
+    }
+
+    // Requests continuous autofocus if the device/browser reports support
+    // for it. No-op (and safe) everywhere else, including iOS Safari.
+    async function applyContinuousAutofocus(track) {
+        try {
+            if (typeof track.getCapabilities !== "function") {
+                return;
+            }
+            const capabilities = track.getCapabilities();
+            if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+                await track.applyConstraints({ advanced: [{ focusMode: "continuous" }] });
+            }
+        } catch (error) {
+            console.warn("[Scanner] Continuous autofocus not applied.", error);
+        }
+    }
+
+    function logCameraDebugInfo(track) {
+        try {
+            if (typeof track.getSettings === "function") {
+                console.log("[Scanner] camera settings:", track.getSettings());
+            }
+            if (typeof track.getCapabilities === "function") {
+                console.log("[Scanner] camera capabilities:", track.getCapabilities());
+            }
+        } catch (error) {
+            // Debug info only - never let this affect scanning.
+        }
+    }
+
     // ================= START / STOP =================
 
     async function startScanner() {
         startButton.disabled = true;
+        setScannerStatus("Starting camera...");
 
         try {
             audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -191,10 +334,8 @@
         }
 
         try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: { facingMode: { ideal: "environment" } }
-            });
+            stream = await acquireCameraStream();
+            stream = await preferMainRearCamera(stream);
         } catch (error) {
             console.error(error);
             setScannerStatus(cameraErrorMessage(error));
@@ -207,14 +348,19 @@
         cameraOverlay.classList.add("active");
         cameraIdleState.classList.add("d-none");
 
-        try {
-            await cameraPreview.play();
-        } catch (error) {
-            // play() can reject if the user backgrounds the tab immediately; safe to ignore.
-        }
+        // IMPORTANT: do NOT call cameraPreview.play() here. ZXing's own
+        // decodeFromVideoElementContinuously() waits internally for the
+        // video's 'playing' event before it starts the decode loop. If we
+        // already play() the video ourselves first, that event has already
+        // fired by the time ZXing attaches its listener, so it never fires
+        // again and the decode loop silently never starts. Let ZXing start
+        // playback itself.
 
         videoTrack = stream.getVideoTracks()[0];
+        logCameraDebugInfo(videoTrack);
+        await applyContinuousAutofocus(videoTrack);
         setupTorchButton(videoTrack);
+        setupZoomControls(videoTrack);
 
         const hints = new Map();
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, getSupportedFormats());
@@ -226,14 +372,34 @@
         stopButton.classList.remove("d-none");
 
         try {
-            scanControls = await codeReader.decodeFromVideoElement(cameraPreview, (result, error) => {
+            // decodeFromVideoElement() (no "Continuously" suffix) only takes a
+            // single argument and resolves ONCE after the first successful
+            // decode - it silently ignores a second callback argument. That
+            // meant the callback below was never actually invoked, so no scan
+            // ever reached the POS even though ZXing could read the code fine.
+            // decodeFromVideoElementContinuously() is the correct method for a
+            // persistent scan-loop-with-callback, matching how this is used.
+            let decodeLoopConfirmed = false;
+            scanControls = await codeReader.decodeFromVideoElementContinuously(cameraPreview, (result, error) => {
+                if (!decodeLoopConfirmed) {
+                    // Fires on the very first callback invocation, success or
+                    // not - proves frames are actually reaching the decoder.
+                    // If this never logs, the loop itself never started.
+                    decodeLoopConfirmed = true;
+                    console.log("[Scanner] Decode loop is running - frames are being analyzed.");
+                }
                 if (result) {
                     handleDetectedBarcode(result.getText());
                 }
                 // NotFoundException fires continuously between detections - expected, ignore.
             });
+            console.log("[Scanner] decodeFromVideoElementContinuously setup resolved - video is playing.");
         } catch (error) {
-            console.error(error);
+            // If the decode loop fails to start, the camera preview is still
+            // showing (misleadingly looks "ready") but nothing is being
+            // scanned. Surface this instead of failing silently.
+            console.error("[Scanner] Failed to start barcode decoding:", error);
+            setScannerStatus("Barcode scanning failed to start. Try Stop then Start again.");
         }
     }
 
@@ -262,6 +428,9 @@
 
         torchButton.classList.add("d-none");
         torchOn = false;
+
+        zoomControls.classList.add("d-none");
+        zoomButtons.innerHTML = "";
 
         startButton.classList.remove("d-none");
         startButton.disabled = false;
@@ -304,6 +473,59 @@
         } catch (error) {
             console.error(error);
             torchOn = !torchOn;
+        }
+    }
+
+    // ================= ZOOM =================
+
+    function setupZoomControls(track) {
+        zoomControls.classList.add("d-none");
+        zoomButtons.innerHTML = "";
+
+        if (!track || typeof track.getCapabilities !== "function") {
+            return;
+        }
+
+        let capabilities;
+        try {
+            capabilities = track.getCapabilities();
+        } catch (error) {
+            return;
+        }
+
+        if (!capabilities || !capabilities.zoom) {
+            return;
+        }
+
+        const min = capabilities.zoom.min;
+        const max = capabilities.zoom.max;
+        let levels = ZOOM_LEVELS.filter((level) => level >= min && level <= max);
+        if (levels.length === 0) {
+            levels = [min];
+        }
+
+        levels.forEach((level, index) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "zoom-btn" + (index === 0 ? " active" : "");
+            button.textContent = level + "x";
+            button.addEventListener("click", () => applyZoom(level, button));
+            zoomButtons.appendChild(button);
+        });
+
+        zoomControls.classList.remove("d-none");
+    }
+
+    async function applyZoom(level, buttonEl) {
+        if (!videoTrack) {
+            return;
+        }
+        try {
+            await videoTrack.applyConstraints({ advanced: [{ zoom: level }] });
+            zoomButtons.querySelectorAll(".zoom-btn").forEach((btn) => btn.classList.remove("active"));
+            buttonEl.classList.add("active");
+        } catch (error) {
+            console.warn("[Scanner] Zoom not applied.", error);
         }
     }
 
@@ -361,6 +583,17 @@
             navigator.vibrate(80);
         }
         beep();
+
+        // Stop decoding immediately so a stray frame can't trigger a second
+        // scan while we navigate to the result page.
+        navigatingToResult = true;
+        if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+        }
+
+        setTimeout(() => {
+            window.location.href = "/scanner/" + token + "/result?barcode=" + encodeURIComponent(barcode);
+        }, RESULT_NAV_DELAY_MS);
     }
 
     function onScanFailure(message) {
