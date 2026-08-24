@@ -7,11 +7,13 @@ import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.loyalty.dtos.LoyaltyConfigRequest;
 import com.localmarts.pos.loyalty.entity.LoyaltyConfig;
 import com.localmarts.pos.loyalty.repository.LoyaltyConfigRepository;
+import com.localmarts.pos.sale.entity.Sale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -28,44 +30,65 @@ public class LoyaltyConfigService {
         return findOrCreateConfig();
     }
 
+    public LoyaltyConfig getSaleConfig(LocalDateTime saleTimeStamp){
+        if(saleTimeStamp==null) throw new IllegalArgumentException(
+                "Sale timestamp is required"
+        );
+        return loyaltyConfigRepository.findFirstByCreatedAtLessThanEqualOrderByCreatedAtDesc(
+                saleTimeStamp
+        ).orElseThrow(()->new IllegalStateException(
+                        "No Loyalty config for this sale"
+                )
+        );
+    }
+
     @Transactional
     public LoyaltyConfig update(
             LoyaltyConfigRequest request,
             Long updatedBy
     ) {
-        LoyaltyConfig config = findOrCreateConfig();
+        LoyaltyConfig currConfig = findOrCreateConfig();
 
-        validateBusinessRules(request, updatedBy, config.getId());
+        validateBusinessRules(request, updatedBy, currConfig.getId());
 
         List<AuditDetails> details = new AuditChangeHelper()
-                .addChange("minimumPurchaseAmount", config.getMinimumPurchaseAmount(), request.minimumPurchaseAmount())
-                .addChange("spendingAmount", config.getSpendingAmount(), request.spendingAmount())
-                .addChange("earnedPoints", config.getEarnedPoints(), request.earnedPoints())
-                .addChange("redeemPoints", config.getRedeemPoints(), request.redeemPoints())
-                .addChange("redeemValue", config.getRedeemValue(), request.redeemValue())
-                .addChange("minimumRedeemPoints", config.getMinimumRedeemPoints(), request.minimumRedeemPoints())
-                .addChange("earningEnabled", config.isEarningEnabled(), request.earningEnabled())
-                .addChange("redemptionEnabled", config.isRedemptionEnabled(), request.redemptionEnabled())
+                .addChange("minimumPurchaseAmount", currConfig.getMinimumPurchaseAmount(), request.minimumPurchaseAmount())
+                .addChange("spendingAmount", currConfig.getSpendingAmount(), request.spendingAmount())
+                .addChange("earnedPoints", currConfig.getEarnedPoints(), request.earnedPoints())
+                .addChange("redeemPoints", currConfig.getRedeemPoints(), request.redeemPoints())
+                .addChange("redeemValue", currConfig.getRedeemValue(), request.redeemValue())
+                .addChange("minimumRedeemPoints", currConfig.getMinimumRedeemPoints(), request.minimumRedeemPoints())
+                .addChange("earningEnabled", currConfig.isEarningEnabled(), request.earningEnabled())
+                .addChange("redemptionEnabled", currConfig.isRedemptionEnabled(), request.redemptionEnabled())
                 .build();
+        if (details.isEmpty()) {
+            return currConfig;
+        }
+        currConfig.setActive(false);
+        currConfig.setUpdatedBy(updatedBy);
+        loyaltyConfigRepository.save(currConfig);
 
-        config.setMinimumPurchaseAmount(request.minimumPurchaseAmount());
-        config.setSpendingAmount(request.spendingAmount());
-        config.setEarnedPoints(request.earnedPoints());
-        config.setRedeemPoints(request.redeemPoints());
-        config.setRedeemValue(request.redeemValue());
-        config.setMinimumRedeemPoints(request.minimumRedeemPoints());
-        config.setEarningEnabled(request.earningEnabled());
-        config.setRedemptionEnabled(request.redemptionEnabled());
-        config.setUpdatedBy(updatedBy);
-
-        LoyaltyConfig saved = loyaltyConfigRepository.save(config);
-        auditService.logSuccess(updatedBy, AuditAction.UPDATE, entity, saved.getId(), "Updated loyalty configuration", details);
-        return saved;
+        LoyaltyConfig newConfig=LoyaltyConfig.builder()
+                        .minimumPurchaseAmount(request.minimumPurchaseAmount())
+                                .spendingAmount(request.spendingAmount())
+                                        .earnedPoints(request.earnedPoints())
+                                                .redeemPoints(request.redeemPoints())
+                                                        .redeemValue(request.redeemValue())
+                                                                .minimumRedeemPoints(request.minimumRedeemPoints())
+                                                                        .earningEnabled(request.earningEnabled())
+                                                                                .redemptionEnabled(request.redemptionEnabled())
+                                                                                        .build();
+        newConfig.setActive(true);
+        newConfig.setCreatedBy(updatedBy);
+        newConfig.setUpdatedBy(updatedBy);
+        LoyaltyConfig newUpdated=loyaltyConfigRepository.save(newConfig);
+        auditService.logSuccess(updatedBy, AuditAction.UPDATE, entity, newUpdated.getId(), "Updated loyalty configuration", details);
+        return newUpdated;
     }
 
     private LoyaltyConfig findOrCreateConfig() {
-        return loyaltyConfigRepository.findFirstByOrderByIdAsc()
-                .orElseGet(() -> createDefaultConfig());
+        return loyaltyConfigRepository.findFirstByActiveTrueOrderByIdDesc()
+                .orElseGet(this::createDefaultConfig);
     }
 
     private LoyaltyConfig createDefaultConfig() {

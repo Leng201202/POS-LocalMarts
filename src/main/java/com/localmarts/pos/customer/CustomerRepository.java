@@ -29,7 +29,7 @@ public interface CustomerRepository extends JpaRepository<Customer,Long> {
                 OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR LOWER(c.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))
           )
-        ORDER BY c.created_at DESC
+        ORDER BY c.createdAt DESC
     """)
     List<Customer> filter(@Param("keyword") String keyword);
 
