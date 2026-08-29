@@ -1,90 +1,69 @@
 package com.localmarts.pos.scanner;
 
+import com.localmarts.pos.product.ProductService;
+import com.localmarts.pos.product.entity.Product;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
- * POS-side scanner pairing screen and session-management API.
- * Everything under /pos/scanner/** requires an authenticated ADMIN or CASHIER
- * (enforced in SecurityConfig) - the phone never calls these endpoints.
+ * Authenticated portal for a dedicated wired USB barcode scanner.
+ * Dedicated scanners act as keyboards, so the browser only needs a focused
+ * input; there is no phone pairing, camera access, or public scanner API.
  */
-@Slf4j
 @Controller
+@RequestMapping("/pos/scanner")
 @RequiredArgsConstructor
 public class PosScannerController {
 
-    private final ScannerSessionService scannerSessionService;
+    private final ProductService productService;
 
-    @Value("${server.port}")
-    private int serverPort;
-
-    @GetMapping("/pos/scanner")
-    public String scannerConnectPage() {
+    @GetMapping
+    public String scannerPortal() {
         return "scanner/connect";
     }
 
-    @PostMapping("/pos/scanner/session")
+    @GetMapping("/lookup")
     @ResponseBody
-    public ResponseEntity<?> createSession() {
-        ScannerSession session = scannerSessionService.createSession("POS-01");
-        String joinUrl = "https://" + resolveLanIp() + ":" + serverPort + "/scanner/join/" + session.getToken();
-        return ResponseEntity.ok(Map.of(
-                "token", session.getToken(),
-                "terminalId", session.getTerminalId(),
-                "expiresAt", session.getPairingExpiresAt(),
-                "joinUrl", joinUrl
-        ));
-    }
+    public ResponseEntity<?> lookup(@RequestParam(required = false) String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Barcode is required"));
+        }
 
-    @GetMapping("/pos/scanner/session/{token}/status")
-    @ResponseBody
-    public ResponseEntity<?> getStatus(@PathVariable String token) {
-        return scannerSessionService.findByToken(token)
-                .map(session -> ResponseEntity.ok(Map.of("connected", session.isConnected())))
+        return productService.findActiveByBarcode(barcode)
+                .map(product -> ResponseEntity.ok(ScannerProduct.from(product)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/pos/scanner/session/{token}")
-    @ResponseBody
-    public ResponseEntity<?> deleteSession(@PathVariable String token) {
-        scannerSessionService.delete(token);
-        return ResponseEntity.noContent().build();
-    }
+    record ScannerProduct(
+            Long id,
+            String name,
+            String barcode,
+            String size,
+            String unit,
+            BigDecimal sellingPrice,
+            BigDecimal discountPercent,
+            Integer stockQuantity) {
 
-    /**
-     * Best-effort LAN IPv4 lookup so the QR code points phones at an address
-     * they can actually reach instead of "localhost" (which only resolves on
-     * the POS machine itself).
-     */
-    private String resolveLanIp() {
-        try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface iface = interfaces.nextElement();
-                if (iface.isLoopback() || iface.isVirtual() || !iface.isUp()) {
-                    continue;
-                }
-                Enumeration<InetAddress> addresses = iface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    InetAddress address = addresses.nextElement();
-                    if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
-                        return address.getHostAddress();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Unable to resolve LAN IP address, falling back to localhost", e);
+        static ScannerProduct from(Product product) {
+            return new ScannerProduct(
+                    product.getId(),
+                    product.getName(),
+                    product.getBarcode(),
+                    product.getSize(),
+                    product.getUnit() == null ? null : product.getUnit().getName(),
+                    product.getSellingPrice(),
+                    product.getDiscountPercent(),
+                    product.getStockQuantity()
+            );
         }
-        return "localhost";
     }
 }

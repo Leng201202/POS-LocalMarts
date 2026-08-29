@@ -55,6 +55,14 @@ public class ProductService {
         return productRepository.findFirstByBarcodeAndDeletedAtIsNull(barcode);
     }
 
+    public Optional<Product> findActiveByBarcode(String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return Optional.empty();
+        }
+        return productRepository
+                .findFirstByBarcodeAndActiveTrueAndDeletedAtIsNull(barcode.trim());
+    }
+
     public void create(Product product, Long createdBy) {
 
         try {
