@@ -1,35 +1,16 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org">
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-
-    <!-- Spring Security CSRF -->
-    <meta name="_csrf" th:content="${_csrf.token}">
-    <meta name="_csrf_header" th:content="${_csrf.headerName}">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
-
-    <title>Connect Scanner | LocalMart POS</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Barcode Scanner | LocalMart POS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
           rel="stylesheet">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
           rel="stylesheet">
-
     <style>
-        body {
-            background: #f8f9fa;
-        }
-
-        .scanner-card {
-            max-width: 560px;
-            margin: 0 auto;
-        }
-
+        body { background: #f8f9fa; }
+        .scanner-portal { max-width: 760px; margin: 0 auto; }
         .scanner-icon {
             width: 64px;
             height: 64px;
@@ -38,580 +19,260 @@
             justify-content: center;
             border-radius: 18px;
         }
-
-        #qrCode img {
-            margin: 0 auto;
+        .scan-input { font-size: 1.25rem; letter-spacing: .04em; }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
         }
-
-        .status-box {
-            border-radius: 12px;
-            padding: 14px 16px;
-        }
+        .product-value { font-weight: 600; overflow-wrap: anywhere; }
     </style>
 </head>
-
 <body>
-
-<!-- ================= NAVBAR ================= -->
 
 <nav class="navbar bg-white shadow-sm">
     <div class="container-fluid px-4">
-
-        <a class="navbar-brand fw-bold"
-           th:href="@{/cashier}">
-
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
             <i class="bi bi-shop me-1"></i>
             LocalMart POS
-
         </a>
-
-        <a th:href="@{/cashier}"
-           class="btn btn-outline-secondary btn-sm">
-
+        <a th:href="@{/cashier}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i>
             Back to Dashboard
-
         </a>
-
     </div>
 </nav>
 
-
-<!-- ================= MAIN ================= -->
-
 <main class="container py-5">
-
-    <div class="scanner-card">
-
+    <div class="scanner-portal">
         <div class="card border-0 shadow-sm">
-
             <div class="card-body p-4 p-md-5">
-
-                <!-- Header -->
-
                 <div class="text-center mb-4">
-
-                    <div class="scanner-icon
-                                bg-primary-subtle
-                                text-primary
-                                mb-3">
-
+                    <div class="scanner-icon bg-primary-subtle text-primary mb-3">
                         <i class="bi bi-upc-scan fs-2"></i>
-
                     </div>
-
-                    <h3 class="fw-bold mb-2">
-                        Connect Phone Scanner
-                    </h3>
-
+                    <h2 class="fw-bold mb-2">Dedicated Barcode Scanner</h2>
                     <p class="text-muted mb-0">
-                        Pair your phone with this POS
-                        and use the phone camera as a barcode scanner.
+                        Connect a wired USB scanner and complete one test scan before starting a sale.
                     </p>
-
                 </div>
 
-
-                <!-- Instructions -->
-
-                <div class="bg-light rounded-3 p-3 mb-4">
-
-                    <div class="d-flex gap-3 mb-3">
-
-                        <div class="fw-bold text-primary">
-                            1
-                        </div>
-
+                <div id="scannerStatus"
+                     class="alert alert-danger d-flex justify-content-between align-items-center gap-3"
+                     role="status" aria-live="polite">
+                    <div class="d-flex align-items-center gap-2">
+                        <span id="statusDot" class="status-dot bg-danger"></span>
                         <div>
-                            Make sure your phone and POS computer
-                            are connected to the same Wi-Fi.
+                            <div id="statusText" class="fw-bold">Disconnected</div>
+                            <div id="statusDetail" class="small">Connect the USB cable, then scan a barcode below.</div>
                         </div>
-
                     </div>
-
-                    <div class="d-flex gap-3 mb-3">
-
-                        <div class="fw-bold text-primary">
-                            2
-                        </div>
-
-                        <div>
-                            Click the connect button below.
-                        </div>
-
-                    </div>
-
-                    <div class="d-flex gap-3">
-
-                        <div class="fw-bold text-primary">
-                            3
-                        </div>
-
-                        <div>
-                            Scan the QR code using your phone camera.
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- AP isolation notice -->
-
-                <div class="alert alert-secondary small mb-4">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Some Wi-Fi networks (common on guest networks or public
-                    routers) block devices from talking to each other, known as
-                    "AP/client isolation." If the phone can't open the link
-                    after scanning, connect both devices to a home/office
-                    Wi-Fi network without this restriction.
-                </div>
-
-
-                <!-- Connect Button -->
-
-                <div class="d-grid">
-
-                    <button id="connectButton"
+                    <button id="disconnectButton"
                             type="button"
-                            class="btn btn-primary btn-lg">
-
-                        <i class="bi bi-phone me-2"></i>
-                        Connect Phone Scanner
-
+                            class="btn btn-sm btn-outline-danger d-none">
+                        Disconnect
                     </button>
-
                 </div>
 
+                <div class="alert alert-info">
+                    <div class="fw-semibold mb-2">Connect the wired scanner</div>
+                    <ol class="mb-0 ps-3">
+                        <li>Plug the scanner's USB cable into this computer.</li>
+                        <li>Make sure the scanner is configured to send Enter after each barcode.</li>
+                        <li>Scan any barcode in the test field to verify the connection.</li>
+                    </ol>
+                </div>
 
-                <!-- Scanner Section -->
+                <form id="scannerForm" class="mt-4">
+                    <label for="barcodeInput" class="form-label fw-semibold">
+                        Test scanner connection
+                    </label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                        <input id="barcodeInput"
+                               class="form-control scan-input"
+                               type="text"
+                               autocomplete="off"
+                               autocapitalize="off"
+                               spellcheck="false"
+                               placeholder="Scan a barcode"
+                               autofocus>
+                        <button class="btn btn-primary" type="submit">Verify</button>
+                    </div>
+                </form>
 
-                <div id="scannerSection"
-                     class="text-center mt-4"
-                     style="display:none;">
+                <div id="scanFeedback"
+                     class="alert alert-secondary mt-3 mb-0 d-none"
+                     aria-live="polite">
+                </div>
 
-                    <hr class="my-4">
-
-                    <h5 class="fw-bold mb-2">
-                        Scan this QR code
-                    </h5>
-
-                    <p class="text-muted small mb-4">
-                        Open your phone camera and scan the code below.
-                    </p>
-
-
-                    <!-- QR -->
-
-                    <div class="d-flex
-                                justify-content-center
-                                mb-3">
-
-                        <div class="bg-white
-                                    border
-                                    rounded-3
-                                    p-3">
-
-                            <div id="qrCode"></div>
-
+                <section id="productResult" class="card bg-light border-0 mt-4 d-none">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <div>
+                                <div class="text-muted small text-uppercase">Product found</div>
+                                <h4 id="productName" class="fw-bold mb-0"></h4>
+                            </div>
+                            <span id="stockBadge" class="badge"></span>
                         </div>
-
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Barcode</div>
+                                <div id="productBarcode" class="product-value"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Price</div>
+                                <div id="productPrice" class="product-value"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Size / Unit</div>
+                                <div id="productUnit" class="product-value"></div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="text-muted small">Available stock</div>
+                                <div id="productStock" class="product-value"></div>
+                            </div>
+                        </div>
                     </div>
+                </section>
 
-                    <p class="text-muted small mb-4">
-                        Can't scan it? Open this link on the phone instead:
-                        <br>
-                        <code id="joinUrlText"></code>
-                    </p>
-
-
-                    <!-- Status -->
-
-                    <div id="statusBox"
-                         class="status-box
-                                bg-warning-subtle
-                                text-warning-emphasis">
-
-                        <i id="statusIcon"
-                           class="bi bi-hourglass-split me-2"></i>
-
-                        <span id="status">
-                            Waiting for scanner...
-                        </span>
-
+                <div id="saleActions" class="d-grid mt-4 d-none">
+                    <a class="btn btn-success btn-lg" th:href="@{/cashier/sale}">
+                        <i class="bi bi-cart-plus me-2"></i>
+                        Create Sale
+                    </a>
+                    <div class="form-text text-center mt-2">
+                        The scanner will remain connected for this browser session.
                     </div>
-
-                    <div class="d-grid mt-3">
-
-                        <button id="disconnectButton"
-                                type="button"
-                                class="btn btn-outline-danger"
-                                style="display:none;">
-
-                            <i class="bi bi-x-circle me-2"></i>
-                            Disconnect Scanner
-
-                        </button>
-
-                    </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
 </main>
 
-
-<!-- ================= JS ================= -->
-
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
-</script>
-
 <script>
-
-    const connectButton =
-        document.getElementById("connectButton");
-
-    const scannerSection =
-        document.getElementById("scannerSection");
-
-    const statusText =
-        document.getElementById("status");
-
-    const statusBox =
-        document.getElementById("statusBox");
-
-    const statusIcon =
-        document.getElementById("statusIcon");
-
-    const disconnectButton =
-        document.getElementById("disconnectButton");
-
-    const joinUrlText =
-        document.getElementById("joinUrlText");
-
-
-    // ================= CSRF =================
-
-    const csrfToken =
-        document.querySelector('meta[name="_csrf"]').content;
-
-    const csrfHeader =
-        document.querySelector('meta[name="_csrf_header"]').content;
-
-
-    let token = null;
-    let statusTimer = null;
-
-
-    // ================= CREATE SESSION =================
-
-    connectButton.addEventListener(
-        "click",
-        async () => {
-
-            connectButton.disabled = true;
-
-            connectButton.innerHTML =
-                '<span class="spinner-border spinner-border-sm me-2"></span>' +
-                'Creating Scanner Session...';
-
-            try {
-
-                const response = await fetch(
-                    "/pos/scanner/session",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            [csrfHeader]: csrfToken
-                        }
-                    }
-                );
-
-
-                if (!response.ok) {
-
-                    console.error(
-                        "Create session failed:",
-                        response.status
-                    );
-
-                    throw new Error(
-                        "Unable to create scanner session."
-                    );
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                token = data.token;
-
-
-                // The server resolves its own LAN IP so the QR code points
-                // phones at an address they can actually reach - the browser
-                // that created the session might be on "localhost", which
-                // only resolves on the POS machine itself.
-
-                const scannerUrl = data.joinUrl;
-
-
-                console.log(
-                    "Scanner URL:",
-                    scannerUrl
-                );
-
-
-                joinUrlText.textContent = scannerUrl;
-
-
-                scannerSection.style.display =
-                    "block";
-
-
-                const qrCodeElement =
-                    document.getElementById(
-                        "qrCode"
-                    );
-
-
-                qrCodeElement.innerHTML = "";
-
-
-                new QRCode(
-                    qrCodeElement,
-                    {
-                        text: scannerUrl,
-                        width: 220,
-                        height: 220
-                    }
-                );
-
-
-                setWaitingStatus();
-
-
-                connectButton.innerHTML =
-                    '<i class="bi bi-arrow-clockwise me-2"></i>' +
-                    'Generate New QR Code';
-
-
-                connectButton.disabled = false;
-
-
-                startStatusCheck();
-
-            } catch (error) {
-
-                console.error(error);
-
-
-                scannerSection.style.display =
-                    "block";
-
-
-                setErrorStatus(
-                    "Unable to create scanner session."
-                );
-
-
-                connectButton.disabled = false;
-
-
-                connectButton.innerHTML =
-                    '<i class="bi bi-phone me-2"></i>' +
-                    'Try Again';
-
-            }
-
-        }
-    );
-
-
-    // ================= STATUS CHECK =================
-
-    function startStatusCheck() {
-
-        if (statusTimer) {
-            clearInterval(statusTimer);
-        }
-
-
-        statusTimer =
-            setInterval(
-                async () => {
-
-                    try {
-
-                        const response =
-                            await fetch(
-                                "/pos/scanner/session/" +
-                                token +
-                                "/status"
-                            );
-
-
-                        if (!response.ok) {
-
-                            setErrorStatus(
-                                "Session expired. Generate a new QR code."
-                            );
-
-
-                            clearInterval(
-                                statusTimer
-                            );
-
-
-                            return;
-                        }
-
-
-                        const data =
-                            await response.json();
-
-
-                        if (data.connected) {
-
-                            setConnectedStatus();
-
-
-                            clearInterval(
-                                statusTimer
-                            );
-                        }
-
-                    } catch (error) {
-
-                        console.error(error);
-
-
-                        setErrorStatus(
-                            "Unable to check scanner connection."
-                        );
-
-                    }
-
-                },
-                1500
-            );
-    }
-
-
-    // ================= STATUS UI =================
-
-    function setWaitingStatus() {
-
-        statusBox.className =
-            "status-box bg-warning-subtle text-warning-emphasis";
-
-
-        statusIcon.className =
-            "bi bi-hourglass-split me-2";
-
-
-        statusText.textContent =
-            "Waiting for scanner...";
-
-
-        disconnectButton.style.display = "none";
-    }
-
-
-    function setConnectedStatus() {
-
-        statusBox.className =
-            "status-box bg-success-subtle text-success-emphasis";
-
-
-        statusIcon.className =
-            "bi bi-check-circle-fill me-2";
-
-
-        statusText.textContent =
-            "Phone scanner connected successfully.";
-
-
-        disconnectButton.style.display = "block";
-    }
-
-
-    // ================= DISCONNECT =================
-
-    disconnectButton.addEventListener(
-        "click",
-        async () => {
-
-            if (!token) {
+    (() => {
+        const form = document.getElementById("scannerForm");
+        const input = document.getElementById("barcodeInput");
+        const status = document.getElementById("scannerStatus");
+        const statusDot = document.getElementById("statusDot");
+        const statusText = document.getElementById("statusText");
+        const statusDetail = document.getElementById("statusDetail");
+        const disconnectButton = document.getElementById("disconnectButton");
+        const scanFeedback = document.getElementById("scanFeedback");
+        const productResult = document.getElementById("productResult");
+        const saleActions = document.getElementById("saleActions");
+        const scannerConnectionKey = "localmart-pos-usb-scanner-connected";
+        const scannerVerifiedAtKey = "localmart-pos-usb-scanner-verified-at";
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            const barcode = input.value.trim();
+            if (!barcode) {
+                showFeedback("warning", "Scan a barcode to verify the USB scanner.");
+                keepFocus();
                 return;
             }
 
-            disconnectButton.disabled = true;
+            markConnected();
+            showFeedback("primary", `USB input received. Checking ${barcode}…`);
+            productResult.classList.add("d-none");
 
             try {
-
-                await fetch(
-                    "/pos/scanner/session/" + token,
-                    {
-                        method: "DELETE",
-                        headers: {
-                            [csrfHeader]: csrfToken
-                        }
-                    }
+                const response = await fetch(
+                    "/pos/scanner/lookup?barcode=" + encodeURIComponent(barcode),
+                    { headers: { "Accept": "application/json" } }
                 );
 
-            } catch (error) {
-
-                console.error(error);
-
-            } finally {
-
-                if (statusTimer) {
-                    clearInterval(statusTimer);
+                if (response.status === 404) {
+                    showFeedback("warning", `Connection verified. No active product uses barcode ${barcode}.`);
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error("Lookup failed");
                 }
 
-                token = null;
-
-                scannerSection.style.display = "none";
-
-                disconnectButton.disabled = false;
-
-                connectButton.disabled = false;
-
-                connectButton.innerHTML =
-                    '<i class="bi bi-phone me-2"></i>' +
-                    'Connect Phone Scanner';
-
+                const product = await response.json();
+                showProduct(product);
+                showFeedback("success", "Connection verified and product found successfully.");
+            } catch (error) {
+                console.error(error);
+                showFeedback("danger", "Scanner input was received, but the product lookup failed.");
+            } finally {
+                input.value = "";
+                keepFocus();
             }
+        });
 
+        disconnectButton.addEventListener("click", () => {
+            sessionStorage.removeItem(scannerConnectionKey);
+            sessionStorage.removeItem(scannerVerifiedAtKey);
+            showDisconnected();
+            productResult.classList.add("d-none");
+            scanFeedback.classList.add("d-none");
+            keepFocus();
+        });
+
+        document.addEventListener("click", event => {
+            if (!event.target.closest("a, button, input")) {
+                keepFocus();
+            }
+        });
+
+        function showProduct(product) {
+            document.getElementById("productName").textContent = product.name;
+            document.getElementById("productBarcode").textContent = product.barcode;
+            document.getElementById("productPrice").textContent =
+                `฿${Number(product.sellingPrice || 0).toFixed(2)}`;
+            document.getElementById("productUnit").textContent =
+                [product.size, product.unit].filter(Boolean).join(" / ") || "—";
+            document.getElementById("productStock").textContent = product.stockQuantity ?? 0;
+
+            const stockBadge = document.getElementById("stockBadge");
+            const inStock = Number(product.stockQuantity || 0) > 0;
+            stockBadge.className = "badge " + (inStock ? "text-bg-success" : "text-bg-secondary");
+            stockBadge.textContent = inStock ? "In stock" : "Out of stock";
+
+            productResult.classList.remove("d-none");
         }
-    );
 
+        function markConnected() {
+            sessionStorage.setItem(scannerConnectionKey, "true");
+            sessionStorage.setItem(scannerVerifiedAtKey, new Date().toISOString());
+            status.className = "alert alert-success d-flex justify-content-between align-items-center gap-3";
+            statusDot.className = "status-dot bg-success";
+            statusText.textContent = "Connected";
+            statusDetail.textContent = "USB scanner input verified in this browser session.";
+            disconnectButton.classList.remove("d-none");
+            saleActions.classList.remove("d-none");
+        }
 
-    function setErrorStatus(message) {
+        function showDisconnected() {
+            status.className = "alert alert-danger d-flex justify-content-between align-items-center gap-3";
+            statusDot.className = "status-dot bg-danger";
+            statusText.textContent = "Disconnected";
+            statusDetail.textContent = "Connect the USB cable, then scan a barcode below.";
+            disconnectButton.classList.add("d-none");
+            saleActions.classList.add("d-none");
+        }
 
-        statusBox.className =
-            "status-box bg-danger-subtle text-danger-emphasis";
+        function showFeedback(kind, message) {
+            scanFeedback.className = `alert alert-${kind} mt-3 mb-0`;
+            scanFeedback.textContent = message;
+        }
 
+        function keepFocus() {
+            window.setTimeout(() => input.focus(), 0);
+        }
 
-        statusIcon.className =
-            "bi bi-exclamation-triangle-fill me-2";
-
-
-        statusText.textContent =
-            message;
-    }
-
+        if (sessionStorage.getItem(scannerConnectionKey) === "true") {
+            markConnected();
+        } else {
+            showDisconnected();
+        }
+        keepFocus();
+    })();
 </script>
-
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js">
-</script>
-
 </body>
 </html>

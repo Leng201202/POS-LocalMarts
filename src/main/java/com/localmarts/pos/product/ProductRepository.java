@@ -21,6 +21,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             String barcode
     );
 
+    Optional<Product> findFirstByBarcodeAndActiveTrueAndDeletedAtIsNull(
+            String barcode
+    );
+
     List<Product> findAllByActiveTrueAndDeletedAtIsNullOrderByNameAsc();
 
     @Query("""

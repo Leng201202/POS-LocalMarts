@@ -45,5 +45,4 @@ public class LoyaltyTransaction {
     @Column(nullable = false,updatable = false)
     private LocalDateTime timestamp;
 
-
 }

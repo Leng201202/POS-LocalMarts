@@ -45,6 +45,47 @@
 
         <div class="col-xl-7">
             <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">USB Barcode Scanner</h5>
+                    <span id="saleScannerStatus" class="badge text-bg-secondary">Checking…</span>
+                </div>
+                <div class="card-body">
+                    <div id="scannerDisconnectedMessage" class="d-none">
+                        <p class="text-muted mb-3">
+                            Verify the wired USB scanner before scanning products into the cart.
+                        </p>
+                        <a th:href="@{/pos/scanner}" class="btn btn-primary">
+                            <i class="bi bi-usb-plug me-1"></i>
+                            Connect Scanner
+                        </a>
+                    </div>
+
+                    <form id="saleScannerForm" class="d-none">
+                        <label for="saleBarcodeInput" class="form-label fw-semibold">
+                            Scan product into cart
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                            <input id="saleBarcodeInput"
+                                   type="text"
+                                   class="form-control"
+                                   autocomplete="off"
+                                   autocapitalize="off"
+                                   spellcheck="false"
+                                   placeholder="Scan barcode">
+                            <button id="scanAddButton" type="submit" class="btn btn-success">
+                                Add to Cart
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="saleScannerFeedback"
+                         class="alert mt-3 mb-0 d-none"
+                         aria-live="polite"></div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">Search Product</h5>
                 </div>
@@ -67,7 +108,8 @@
                                    name="query"
                                    class="form-control"
                                    th:value="${query}"
-                                   placeholder="Scan barcode or type product name">
+                                   placeholder="Scan barcode or type product name"
+                                   autocomplete="off">
 
                             <button type="submit"
                                     class="btn btn-outline-primary">
@@ -79,6 +121,9 @@
                                class="btn btn-outline-secondary">
                                 Reset
                             </a>
+                        </div>
+                        <div class="form-text">
+                            Use this field for manual product search. Connected scanner input appears above.
                         </div>
                     </form>
                 </div>
@@ -441,38 +486,84 @@
             document.getElementById("changePreview");
         const completeButton =
             document.getElementById("completeSaleButton");
+        const scannerConnectionKey =
+            "localmart-pos-usb-scanner-connected";
+        const saleScannerStatus =
+            document.getElementById("saleScannerStatus");
+        const scannerDisconnectedMessage =
+            document.getElementById("scannerDisconnectedMessage");
+        const saleScannerForm =
+            document.getElementById("saleScannerForm");
+        const saleBarcodeInput =
+            document.getElementById("saleBarcodeInput");
+        const scanAddButton =
+            document.getElementById("scanAddButton");
+        const saleScannerFeedback =
+            document.getElementById("saleScannerFeedback");
 
         let cart = loadCart();
         let currentTotal = 0;
 
         document.querySelectorAll(".add-product").forEach(button => {
             button.addEventListener("click", () => {
-                const productId = Number(button.dataset.productId);
-                const existingItem =
-                    cart.find(item => item.productId === productId);
+                addProductToCart({
+                    id: button.dataset.productId,
+                    name: button.dataset.productName,
+                    barcode: button.dataset.barcode,
+                    size: button.dataset.size,
+                    unit: button.dataset.unit,
+                    sellingPrice: button.dataset.unitPrice,
+                    discountPercent: button.dataset.discountPercent,
+                    stockQuantity: button.dataset.stock
+                });
+            });
+        });
 
-                if (existingItem) {
-                    if (existingItem.quantity
-                            < existingItem.availableStock) {
-                        existingItem.quantity += 1;
-                    }
-                } else {
-                    cart.push({
-                        productId,
-                        name: button.dataset.productName,
-                        barcode: button.dataset.barcode,
-                        size: button.dataset.size || "",
-                        unit: button.dataset.unit || "",
-                        unitPrice: Number(button.dataset.unitPrice),
-                        discountPercent:
-                            Number(button.dataset.discountPercent || 0),
-                        availableStock: Number(button.dataset.stock),
-                        quantity: 1
-                    });
+        saleScannerForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            const barcode = saleBarcodeInput.value.trim();
+
+            if (!barcode) {
+                showScannerFeedback("warning", "Scan a barcode first.");
+                focusScanner();
+                return;
+            }
+
+            scanAddButton.disabled = true;
+            showScannerFeedback("primary", `Looking up ${barcode}…`);
+
+            try {
+                const response = await fetch(
+                    "/pos/scanner/lookup?barcode=" + encodeURIComponent(barcode),
+                    { headers: { "Accept": "application/json" } }
+                );
+
+                if (response.status === 404) {
+                    showScannerFeedback("danger", `No active product uses barcode ${barcode}.`);
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error("Product lookup failed");
                 }
 
-                saveAndRender();
-            });
+                const product = await response.json();
+                const result = addProductToCart(product);
+
+                if (result === "out-of-stock") {
+                    showScannerFeedback("warning", `${product.name} is out of stock.`);
+                } else if (result === "stock-limit") {
+                    showScannerFeedback("warning", `${product.name} is already at its available stock limit.`);
+                } else {
+                    showScannerFeedback("success", `${product.name} added to the cart.`);
+                }
+            } catch (error) {
+                console.error(error);
+                showScannerFeedback("danger", "Unable to add the scanned product. Please try again.");
+            } finally {
+                saleBarcodeInput.value = "";
+                scanAddButton.disabled = false;
+                focusScanner();
+            }
         });
 
         paymentMethod.addEventListener("change", () => {
@@ -509,6 +600,66 @@
                 JSON.stringify(cart)
             );
             renderCart();
+        }
+
+        function addProductToCart(product) {
+            const productId = Number(product.id);
+            const availableStock = Number(product.stockQuantity || 0);
+            const existingItem =
+                cart.find(item => item.productId === productId);
+
+            if (availableStock < 1) {
+                return "out-of-stock";
+            }
+
+            if (existingItem) {
+                if (existingItem.quantity >= availableStock) {
+                    return "stock-limit";
+                }
+                existingItem.availableStock = availableStock;
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    productId,
+                    name: product.name,
+                    barcode: product.barcode,
+                    size: product.size || "",
+                    unit: product.unit || "",
+                    unitPrice: Number(product.sellingPrice || 0),
+                    discountPercent:
+                        Number(product.discountPercent || 0),
+                    availableStock,
+                    quantity: 1
+                });
+            }
+
+            saveAndRender();
+            return "added";
+        }
+
+        function initializeScanner() {
+            const connected =
+                sessionStorage.getItem(scannerConnectionKey) === "true";
+
+            saleScannerStatus.className =
+                "badge " + (connected ? "text-bg-success" : "text-bg-danger");
+            saleScannerStatus.textContent =
+                connected ? "Connected" : "Disconnected";
+            saleScannerForm.classList.toggle("d-none", !connected);
+            scannerDisconnectedMessage.classList.toggle("d-none", connected);
+
+            if (connected) {
+                focusScanner();
+            }
+        }
+
+        function showScannerFeedback(kind, message) {
+            saleScannerFeedback.className = `alert alert-${kind} mt-3 mb-0`;
+            saleScannerFeedback.textContent = message;
+        }
+
+        function focusScanner() {
+            window.setTimeout(() => saleBarcodeInput.focus(), 0);
         }
 
         function renderCart() {
@@ -659,6 +810,7 @@
         }
 
         renderCart();
+        initializeScanner();
     })();
 </script>
 </body>

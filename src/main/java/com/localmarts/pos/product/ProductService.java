@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ProductService {
@@ -48,6 +49,18 @@ public class ProductService {
     public Product findById(Long id) {
         return productRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
+    public Optional<Product> findByBarcode(String barcode) {
+        return productRepository.findFirstByBarcodeAndDeletedAtIsNull(barcode);
+    }
+
+    public Optional<Product> findActiveByBarcode(String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return Optional.empty();
+        }
+        return productRepository
+                .findFirstByBarcodeAndActiveTrueAndDeletedAtIsNull(barcode.trim());
     }
 
     public void create(Product product, Long createdBy) {

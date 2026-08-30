@@ -136,7 +136,7 @@ public class LoyaltyService {
     }
 
 
-    public List<LoyaltyTransaction> filter(TransactionType type) {
+    public List <LoyaltyTransaction> filter(TransactionType type) {
         return loyaltyTransactionRepository.filter(type);
     }
 }
