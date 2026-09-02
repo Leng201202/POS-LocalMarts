@@ -22,6 +22,19 @@ public interface CustomerRepository extends JpaRepository<Customer,Long> {
     @Query("""
         SELECT c
         FROM Customer c
+        WHERE c.active = true
+          AND c.deletedAt IS NULL
+          AND (
+                LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR c.phoneNumber LIKE CONCAT('%', :keyword, '%')
+          )
+        ORDER BY c.name ASC
+    """)
+    List<Customer> searchActiveForCashier(@Param("keyword") String keyword);
+
+    @Query("""
+        SELECT c
+        FROM Customer c
         WHERE c.deletedAt IS NULL
           AND (
                 :keyword IS NULL

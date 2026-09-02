@@ -4,6 +4,7 @@ import com.localmarts.pos.sale.entity.Sale;
 import com.localmarts.pos.sale.entity.SaleStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -48,8 +49,49 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     List<Sale> findTop10ByCashierIdOrderByTimestampDesc(Long cashierId);
 
-    @EntityGraph(attributePaths = "customer")
+    @EntityGraph(attributePaths = {"customer", "items"})
     List<Sale> findByCashierIdOrderByTimestampDesc(Long cashierId);
+
+    @EntityGraph(attributePaths = {"cashier", "customer", "items", "items.product"})
+    @Query("""
+            select distinct s
+            from Sale s
+            left join s.customer c
+            where s.saleStatus = :status
+              and s.timestamp >= :start
+              and s.timestamp <= :end
+              and (:invoiceNo is null or upper(s.invoiceNo) = upper(:invoiceNo))
+              and (:customerPhone is null or c.phoneNumber = :customerPhone)
+              and (:totalAmount is null or s.totalAmount = :totalAmount)
+              and (:paymentMethod is null or s.paymentMethod = :paymentMethod)
+            order by s.timestamp desc
+            """)
+    List<Sale> searchRefundEligibleSales(
+            @Param("status") SaleStatus status,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("invoiceNo") String invoiceNo,
+            @Param("customerPhone") String customerPhone,
+            @Param("totalAmount") BigDecimal totalAmount,
+            @Param("paymentMethod") com.localmarts.pos.sale.entity.PaymentMethod paymentMethod
+    );
+
+    @EntityGraph(attributePaths = {"cashier", "customer", "items", "items.product"})
+    @Query("select distinct s from Sale s where s.id = :id")
+    Optional<Sale> findRefundDetailsById(@Param("id") Long id);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update Sale s
+            set s.saleStatus = :newStatus
+            where s.id = :saleId
+              and s.saleStatus = :expectedStatus
+            """)
+    int claimRefund(
+            @Param("saleId") Long saleId,
+            @Param("expectedStatus") SaleStatus expectedStatus,
+            @Param("newStatus") SaleStatus newStatus
+    );
 
     @EntityGraph(attributePaths = {"cashier", "items"})
     @Query("select distinct s from Sale s where s.id = :id")

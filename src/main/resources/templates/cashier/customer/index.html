@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Loyalty Lookup | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+        <a th:href="@{/cashier}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>
+            Cashier Dashboard
+        </a>
+    </div>
+</nav>
+
+<main class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Customer Loyalty Lookup</h2>
+        <p class="text-muted mb-0">
+            Find an active member by name or phone number and check their current points.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form th:action="@{/cashier/customers}" method="get"
+                  class="row g-3 align-items-end">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <label for="keyword" class="form-label fw-semibold">
+                        Customer name or phone
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input id="keyword"
+                               name="keyword"
+                               type="search"
+                               class="form-control"
+                               th:value="${keyword}"
+                               placeholder="For example: Christina or 9676"
+                               autocomplete="off">
+                    </div>
+                    <div class="form-text">Partial names and phone numbers are supported.</div>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>
+                        Search
+                    </button>
+                    <a th:href="@{/cashier/customers}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Search Results</h5>
+            <span th:if="${searchSubmitted}"
+                  class="badge bg-primary rounded-pill"
+                  th:text="${#lists.size(customers)}">0</span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${!searchSubmitted}" class="text-center text-muted py-5 px-3">
+                <i class="bi bi-person-vcard display-5 d-block mb-3"></i>
+                <h6 class="fw-semibold">Search for a member to view their points.</h6>
+                <p class="mb-0">Enter any part of the customer name or phone number.</p>
+            </div>
+
+            <div th:if="${searchSubmitted and #lists.isEmpty(customers)}"
+                 class="text-center text-muted py-5 px-3">
+                <i class="bi bi-person-x display-5 d-block mb-3"></i>
+                <h6 class="fw-semibold">No active member found.</h6>
+                <p class="mb-0">Check the spelling or try fewer digits.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(customers)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Current Points</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="customer : ${customers}">
+                        <td class="fw-semibold" th:text="${customer.name}">Customer</td>
+                        <td th:text="${customer.phoneNumber}">0000000000</td>
+                        <td>
+                            <span class="badge bg-warning-subtle text-warning-emphasis border fs-6"
+                                  th:text="${(customer.pointBalance != null ? customer.pointBalance : 0) + ' pts'}">
+                                0 pts
+                            </span>
+                        </td>
+                        <td><span class="badge bg-success">Active</span></td>
+                        <td class="text-end">
+                            <a th:href="@{/cashier/customers/{id}(id=${customer.id})}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -5,12 +5,9 @@ import com.localmarts.pos.customer.entity.Customer;
 import com.localmarts.pos.loyalty.entity.LoyaltyConfig;
 import com.localmarts.pos.loyalty.entity.LoyaltyTransaction;
 import com.localmarts.pos.loyalty.entity.TransactionType;
-import com.localmarts.pos.loyalty.repository.LoyaltyConfigRepository;
 import com.localmarts.pos.loyalty.repository.LoyaltyTransactionRepository;
 import com.localmarts.pos.sale.entity.Sale;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.hpsf.Decimal;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +25,29 @@ public class LoyaltyService {
         return loyaltyTransactionRepository.findAllByOrderByTimestampDesc();
     }
 
+    @Transactional(readOnly = true)
+    public List<LoyaltyTransaction> findRecentForCustomer(Long customerId) {
+        if (customerId == null) {
+            return List.of();
+        }
+        return loyaltyTransactionRepository
+                .findTop20ByCustomerIdOrderByTimestampDesc(customerId);
+    }
+
     public long calculateEarnPoint(BigDecimal eligibleAmount){
-        LoyaltyConfig config=loyaltyConfigService.getConfig();
+        return calculateEarnPoint(
+                eligibleAmount,
+                loyaltyConfigService.getConfig()
+        );
+    }
+
+    public long calculateEarnPoint(
+            BigDecimal eligibleAmount,
+            LoyaltyConfig config
+    ) {
+        if (config == null) {
+            throw new IllegalArgumentException("Loyalty config is required");
+        }
         if(!config.isEarningEnabled()){
             return 0L;
         }
@@ -47,6 +65,78 @@ public class LoyaltyService {
         long group= eligibleAmount.divideToIntegralValue(spendingAmount).longValue();
 
         return group*config.getEarnedPoints();
+    }
+
+    @Transactional
+    public LoyaltyRefundImpact reverseEarnedPointsForRefund(
+            Customer customer,
+            Sale sale,
+            BigDecimal remainingEligibleAmount
+    ) {
+        if (customer == null || sale == null) {
+            return LoyaltyRefundImpact.none();
+        }
+
+        long originalEarned = sale.getPointEarned() == null
+                ? 0L
+                : Math.max(0L, sale.getPointEarned().longValue());
+        long beforePoint = customer.getPointBalance() == null
+                ? 0L
+                : customer.getPointBalance();
+
+        if (originalEarned == 0L) {
+            return new LoyaltyRefundImpact(
+                    0L,
+                    0L,
+                    0L,
+                    beforePoint,
+                    beforePoint
+            );
+        }
+
+        LoyaltyConfig historicalConfig = loyaltyConfigService.getSaleConfig(
+                sale.getTimestamp()
+        );
+        long remainingAllowed = calculateEarnPoint(
+                remainingEligibleAmount,
+                historicalConfig
+        );
+        long pointsToReverse = Math.min(
+                originalEarned,
+                Math.max(0L, originalEarned - remainingAllowed)
+        );
+
+        if (pointsToReverse == 0L) {
+            return new LoyaltyRefundImpact(
+                    originalEarned,
+                    remainingAllowed,
+                    0L,
+                    beforePoint,
+                    beforePoint
+            );
+        }
+
+        long afterPoint = beforePoint - pointsToReverse;
+        customer.setPointBalance(afterPoint);
+        customerRepository.save(customer);
+
+        LoyaltyTransaction transaction = LoyaltyTransaction.builder()
+                .customer(customer)
+                .sale(sale)
+                .type(TransactionType.REFUND_EARN_REVERSAL)
+                .points(-pointsToReverse)
+                .beforePoint(beforePoint)
+                .afterPoint(afterPoint)
+                .build();
+        loyaltyTransactionRepository.save(transaction);
+
+        return new LoyaltyRefundImpact(
+                originalEarned,
+                remainingAllowed,
+                pointsToReverse,
+                beforePoint,
+                afterPoint
+        );
     }
 
     @Transactional
@@ -138,5 +228,17 @@ public class LoyaltyService {
 
     public List <LoyaltyTransaction> filter(TransactionType type) {
         return loyaltyTransactionRepository.filter(type);
+    }
+
+    public record LoyaltyRefundImpact(
+            long originalEarnedPoints,
+            long remainingAllowedPoints,
+            long reversedPoints,
+            long beforeBalance,
+            long afterBalance
+    ) {
+        public static LoyaltyRefundImpact none() {
+            return new LoyaltyRefundImpact(0L, 0L, 0L, 0L, 0L);
+        }
     }
 }

@@ -29,6 +29,7 @@ public class SecurityConfig {
                                 "/category", "/category/**",
                                 "/inventory", "/inventory/**",
                                 "/audit", "/audit/**",
+                                "/customer", "/customer/**",
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
                         .requestMatchers("/cashier", "/cashier/**").hasAnyRole("ADMIN", "CASHIER")

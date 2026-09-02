@@ -159,4 +159,13 @@ public class CustomerService {
 
         return customerRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id);
     }
+
+    @Transactional(readOnly = true)
+    public List<Customer> searchActiveForCashier(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+
+        return customerRepository.searchActiveForCashier(keyword.trim());
+    }
 }

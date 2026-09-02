@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Refund ' + sale.invoiceNo + ' | LocalMart POS'}">Refund Sale</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+        <a th:href="@{/cashier/refunds}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>
+            Refund Search
+        </a>
+    </div>
+</nav>
+
+<main class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Process Refund</h2>
+        <p class="text-muted mb-0">Select every item being returned from this Sale.</p>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <strong>This Sale can be refunded only once.</strong>
+        Select every item being returned before confirming.
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Invoice</div>
+                    <div class="fw-semibold" th:text="${sale.invoiceNo}">INV-001</div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Sale Date &amp; Time</div>
+                    <div th:text="${#temporals.format(sale.timestamp, 'dd MMM yyyy HH:mm')}">31 Aug 2026</div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Original Cashier</div>
+                    <div th:text="${sale.cashier.fullName}">Cashier</div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Customer</div>
+                    <div th:text="${sale.customer != null ? sale.customer.name : 'Walk-in'}">Walk-in</div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Payment Method</div>
+                    <div th:text="${sale.paymentMethod}">CASH</div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Original Total</div>
+                    <div class="fw-bold">
+                        &#3647;<span th:text="${#numbers.formatDecimal(sale.totalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form th:action="@{/cashier/sales/{id}/refund(id=${sale.id})}"
+          th:object="${refundRequest}"
+          method="post">
+
+        <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger">
+            <ul class="mb-0">
+                <li th:each="fieldError : ${#fields.allErrors()}" th:text="${fieldError}"></li>
+            </ul>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">Returned Items</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Return</th>
+                        <th>Item</th>
+                        <th>Unit Price</th>
+                        <th>Discount</th>
+                        <th>Line Net Total</th>
+                        <th>Original Qty</th>
+                        <th style="min-width: 130px;">Refund Qty</th>
+                        <th style="min-width: 180px;">Condition</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="saleItem, row : ${sale.items}">
+                        <td>
+                            <input type="hidden"
+                                   th:field="*{items[__${row.index}__].saleItemId}">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   th:field="*{items[__${row.index}__].selected}"
+                                   th:aria-label="${'Return ' + saleItem.productNameSnapshot}">
+                        </td>
+                        <td>
+                            <div class="fw-semibold" th:text="${saleItem.productNameSnapshot}">Product</div>
+                            <small class="text-muted"
+                                   th:text="${(saleItem.sizeSnapshot != null ? saleItem.sizeSnapshot : '')
+                                       + (saleItem.unitSnapshot != null ? ' / ' + saleItem.unitSnapshot : '')}">
+                                Size / Unit
+                            </small>
+                        </td>
+                        <td>
+                            &#3647;<span th:text="${#numbers.formatDecimal(saleItem.unitPrice, 1, 2)}">0.00</span>
+                        </td>
+                        <td>
+                            <span th:text="${saleItem.discountPercentSnapshot.stripTrailingZeros().toPlainString() + '%'}">0%</span>
+                            <div class="text-muted small">
+                                -&#3647;<span th:text="${#numbers.formatDecimal(saleItem.discountAmount, 1, 2)}">0.00</span>
+                            </div>
+                        </td>
+                        <td class="fw-semibold">
+                            &#3647;<span th:text="${#numbers.formatDecimal(saleItem.netTotal, 1, 2)}">0.00</span>
+                        </td>
+                        <td th:text="${saleItem.quantity}">1</td>
+                        <td>
+                            <input type="number"
+                                   min="1"
+                                   th:max="${saleItem.quantity}"
+                                   class="form-control form-control-sm"
+                                   th:field="*{items[__${row.index}__].quantity}">
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm"
+                                    th:field="*{items[__${row.index}__].condition}">
+                                <option value="">Choose condition</option>
+                                <option th:each="condition : ${returnConditions}"
+                                        th:value="${condition}"
+                                        th:text="${#strings.capitalize(#strings.toLowerCase(condition.name()))}">
+                                    Sellable
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label fw-semibold">Refund Reason</label>
+                            <select id="reason" class="form-select" th:field="*{reason}">
+                                <option value="">Choose a reason</option>
+                                <option th:each="reasonOption : ${refundReasons}"
+                                        th:value="${reasonOption}"
+                                        th:text="${#strings.capitalize(
+                                            #strings.toLowerCase(
+                                                #strings.replace(reasonOption.name(), '_', ' ')
+                                            )
+                                        )}">
+                                    Defective
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Optional Note</label>
+                            <textarea id="note"
+                                      class="form-control"
+                                      rows="3"
+                                      maxlength="500"
+                                      th:field="*{note}"
+                                      placeholder="Additional refund context"></textarea>
+                        </div>
+
+                        <div class="form-check">
+                            <input id="physicalReturnConfirmed"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   th:field="*{physicalReturnConfirmed}">
+                            <label for="physicalReturnConfirmed" class="form-check-label">
+                                I confirm the customer physically returned every selected item.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h5>Refund Preview</h5>
+                        <p class="text-muted small">
+                            This value is calculated by the server from historical SaleItem totals.
+                        </p>
+
+                        <div th:if="${refundPreview == null}" class="alert alert-light border">
+                            Select items, then calculate the refund before confirmation.
+                        </div>
+
+                        <div th:if="${refundPreview != null}" class="alert alert-success">
+                            <div class="small">Refund Amount</div>
+                            <div class="fs-3 fw-bold">
+                                &#3647;<span th:text="${#numbers.formatDecimal(refundPreview, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto d-grid gap-2">
+                            <button type="submit" name="action" value="preview" class="btn btn-outline-primary">
+                                <i class="bi bi-calculator me-1"></i>
+                                Calculate Refund
+                            </button>
+                            <button type="submit" name="action" value="confirm" class="btn btn-danger">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Confirm One-Time Refund
+                            </button>
+                            <a th:href="@{/cashier/refunds}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

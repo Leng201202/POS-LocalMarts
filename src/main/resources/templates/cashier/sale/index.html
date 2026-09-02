@@ -87,7 +87,7 @@
                         <th>Final Total</th>
                         <th>Payment Method</th>
                         <th>Sale Status</th>
-                        <th class="text-end">Receipt</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                     </thead>
 
@@ -147,11 +147,30 @@
                         </td>
 
                         <td class="text-end">
-                            <a th:href="@{/cashier/sales/{id}/receipt(id=${sale.id})}"
+                            <div class="d-flex flex-wrap justify-content-end gap-2">
+                                <a th:if="${#sets.contains(refundableSaleIds, sale.id)}"
+                                   th:href="@{/cashier/sales/{id}/refund(id=${sale.id})}"
+                                   class="btn btn-sm btn-warning">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                    Refund
+                                </a>
+
+                                <span th:if="${sale.saleStatus.name() == 'PARTIALLY_REFUNDED'}"
+                                      class="small text-warning align-self-center">
+                                    Refund already processed
+                                </span>
+
+                                <span th:if="${#sets.contains(expiredRefundSaleIds, sale.id)}"
+                                      class="small text-muted align-self-center">
+                                    Refund period expired
+                                </span>
+
+                                <a th:href="@{/cashier/sales/{id}/receipt(id=${sale.id})}"
                                class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-receipt me-1"></i>
-                                View
-                            </a>
+                                    <i class="bi bi-receipt me-1"></i>
+                                    View
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     </tbody>

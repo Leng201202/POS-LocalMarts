@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${customer.name + ' Loyalty | LocalMart POS'}">Customer Loyalty</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+        <a th:href="@{/cashier/customers}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>
+            Customer Search
+        </a>
+    </div>
+</nav>
+
+<main class="container-fluid px-4 py-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-4">
+                <div class="col-12 col-md">
+                    <div class="text-muted small mb-1">Active member</div>
+                    <h2 class="fw-bold mb-2" th:text="${customer.name}">Customer</h2>
+                    <div class="text-muted">
+                        <i class="bi bi-telephone me-1"></i>
+                        <span th:text="${customer.phoneNumber}">0000000000</span>
+                    </div>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <div class="rounded bg-warning-subtle border border-warning-subtle px-4 py-3 text-center">
+                        <div class="text-muted small">Current Point Balance</div>
+                        <div class="display-6 fw-bold text-warning-emphasis"
+                             th:text="${customer.pointBalance != null ? customer.pointBalance : 0}">0</div>
+                        <div class="small">points</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Loyalty Activity</h5>
+            <span class="text-muted small">Latest 20 transactions</span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${#lists.isEmpty(transactions)}" class="text-center text-muted py-5">
+                <i class="bi bi-clock-history display-5 d-block mb-3"></i>
+                No loyalty activity recorded for this member.
+            </div>
+
+            <div th:if="${!#lists.isEmpty(transactions)}" class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Date &amp; Time</th>
+                        <th>Type</th>
+                        <th class="text-end">Points</th>
+                        <th class="text-end">Before</th>
+                        <th class="text-end">After</th>
+                        <th>Sale</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="transaction : ${transactions}">
+                        <td th:text="${#temporals.format(transaction.timestamp, 'dd MMM yyyy HH:mm')}">
+                            31 Aug 2026 14:30
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border"
+                                  th:text="${#strings.replace(transaction.type.name(), '_', ' ')}">
+                                EARN
+                            </span>
+                        </td>
+                        <td class="text-end fw-bold"
+                            th:classappend="${transaction.points >= 0 ? 'text-success' : 'text-danger'}"
+                            th:text="${transaction.points > 0 ? '+' + transaction.points : transaction.points}">
+                            +0
+                        </td>
+                        <td class="text-end" th:text="${transaction.beforePoint}">0</td>
+                        <td class="text-end" th:text="${transaction.afterPoint}">0</td>
+                        <td>
+                            <span th:if="${transaction.sale != null}"
+                                  th:text="${transaction.sale.invoiceNo}">INV-001</span>
+                            <span th:if="${transaction.sale == null}" class="text-muted">—</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

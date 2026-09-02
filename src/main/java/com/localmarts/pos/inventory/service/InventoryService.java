@@ -60,6 +60,38 @@ public class InventoryService {
     }
 
     @Transactional
+    public Inventory recordReturnedDamaged(
+            Long productId,
+            Integer returnedQuantity,
+            String reason,
+            Long actorId
+    ) {
+        return recordZeroStockImpactReturn(
+                productId,
+                returnedQuantity,
+                InventoryType.DAMAGE,
+                reason,
+                actorId
+        );
+    }
+
+    @Transactional
+    public Inventory recordReturnedExpired(
+            Long productId,
+            Integer returnedQuantity,
+            String reason,
+            Long actorId
+    ) {
+        return recordZeroStockImpactReturn(
+                productId,
+                returnedQuantity,
+                InventoryType.EXPIRED,
+                reason,
+                actorId
+        );
+    }
+
+    @Transactional
     public Inventory missing(
             Long productId,
             Integer quantity,
@@ -154,6 +186,37 @@ public class InventoryService {
         return inventoryRepository.save(inventory);
 
     }
+
+    private Inventory recordZeroStockImpactReturn(
+            Long productId,
+            Integer returnedQuantity,
+            InventoryType type,
+            String reason,
+            Long actorId
+    ) {
+        if (returnedQuantity == null || returnedQuantity < 1) {
+            throw new IllegalArgumentException(
+                    "Returned quantity must be at least 1"
+            );
+        }
+
+        Product product = getProduct(productId);
+        User actor = getActor(actorId);
+        int currentStock = product.getStockQuantity();
+
+        Inventory inventory = Inventory.builder()
+                .product(product)
+                .inventoryType(type)
+                .quantity(0)
+                .beforeStock(currentStock)
+                .afterStock(currentStock)
+                .reason(reason)
+                .actor(actor)
+                .build();
+
+        return inventoryRepository.save(inventory);
+    }
+
     private Product getProduct(Long id){
         return productRepository.findById(id)
                 .orElseThrow(()->

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Complete | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{/cashier}">
+            <i class="bi bi-shop me-1"></i>
+            LocalMart POS
+        </a>
+    </div>
+</nav>
+
+<main class="container py-5">
+    <div class="card border-0 shadow-sm mx-auto" style="max-width: 680px;">
+        <div class="card-body p-4 p-md-5 text-center">
+            <div class="text-success mb-3">
+                <i class="bi bi-check-circle-fill display-3"></i>
+            </div>
+            <h2 class="fw-bold">Refund Recorded</h2>
+            <p class="text-muted">
+                The one-time refund was completed in LocalMart POS.
+            </p>
+
+            <div class="bg-light rounded p-4 text-start my-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Invoice</span>
+                    <strong th:text="${refundInvoiceNo}">INV-001</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Returned Units</span>
+                    <strong th:text="${returnedUnitCount}">1</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Sale Status</span>
+                    <strong th:text="${refundSaleStatus}">PARTIALLY_REFUNDED</strong>
+                </div>
+                <div class="d-flex justify-content-between border-top pt-3 mt-3">
+                    <span class="fw-semibold">Refund Amount</span>
+                    <strong class="fs-4">
+                        &#3647;<span th:text="${#numbers.formatDecimal(refundTotal, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    </strong>
+                </div>
+            </div>
+
+            <div th:if="${refundPaymentMethod != null and refundPaymentMethod.name() == 'CASH'}"
+                 class="alert alert-warning text-start">
+                The POS recorded a CASH refund. The cashier must physically return the displayed amount.
+            </div>
+
+            <div th:if="${refundPaymentMethod != null and refundPaymentMethod.name() != 'CASH'}"
+                 class="alert alert-warning text-start">
+                This refund was recorded inside the POS only. The application did not perform a bank,
+                card, or QR reversal.
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <a th:href="@{/cashier/refunds}" class="btn btn-primary">
+                    Find Another Sale
+                </a>
+                <a th:href="@{/cashier}" class="btn btn-outline-secondary">
+                    Cashier Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
