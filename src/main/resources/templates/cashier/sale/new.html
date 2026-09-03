@@ -154,7 +154,7 @@
                                 <th>Product</th>
                                 <th>Barcode</th>
                                 <th>Price</th>
-                                <th>Discount</th>
+                                <th>Max Loyalty</th>
                                 <th>Stock</th>
                                 <th class="text-end">Cart</th>
                             </tr>
@@ -332,6 +332,62 @@
                     </ul>
                 </div>
 
+                <div th:if="${resolvedCustomer != null}"
+                     id="loyaltyCard"
+                     class="card border-0 shadow-sm mb-4"
+                     th:attr="data-customer-points=${resolvedCustomer.pointBalance != null ? resolvedCustomer.pointBalance : 0},
+                              data-redemption-enabled=${loyaltyConfig != null and loyaltyConfig.redemptionEnabled},
+                              data-redeem-points=${loyaltyConfig != null ? loyaltyConfig.redeemPoints : 0},
+                              data-redeem-value=${loyaltyConfig != null ? loyaltyConfig.redeemValue : 0},
+                              data-minimum-points=${loyaltyConfig != null ? loyaltyConfig.minimumRedeemPoints : 0}">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Loyalty Discount</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 small mb-3">
+                            <div class="col-6">
+                                <span class="text-muted">Available points</span>
+                                <div class="fw-semibold"
+                                     th:text="${resolvedCustomer.pointBalance != null ? resolvedCustomer.pointBalance : 0}">0</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Minimum per sale</span>
+                                <div class="fw-semibold"
+                                     th:text="${loyaltyConfig != null ? loyaltyConfig.minimumRedeemPoints : 0}">0</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Points required</span>
+                                <div id="loyaltyRequiredPoints" class="fw-semibold">0</div>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted">Loyalty discount</span>
+                                <div class="fw-semibold text-success">
+                                    -฿<span id="loyaltyAvailableDiscount">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="loyaltyStatus"
+                             class="alert alert-light border py-2 small">
+                            Add eligible products to calculate loyalty benefits.
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input id="useLoyaltyDiscount"
+                                   type="checkbox"
+                                   class="form-check-input"
+                                   th:field="*{useLoyaltyDiscount}">
+                            <label for="useLoyaltyDiscount"
+                                   class="form-check-label fw-semibold">
+                                Use complete loyalty discount
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Loyalty is all-or-nothing for every eligible item in this cart.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Cart</h5>
@@ -355,7 +411,7 @@
                                 <tr>
                                     <th>Product</th>
                                     <th style="width: 90px;">Qty</th>
-                                    <th class="text-end">Net</th>
+                                    <th class="text-end">Total</th>
                                     <th></th>
                                 </tr>
                                 </thead>
@@ -486,6 +542,14 @@
             document.getElementById("changePreview");
         const completeButton =
             document.getElementById("completeSaleButton");
+        const loyaltyCard = document.getElementById("loyaltyCard");
+        const useLoyaltyDiscount =
+            document.getElementById("useLoyaltyDiscount");
+        const loyaltyRequiredPoints =
+            document.getElementById("loyaltyRequiredPoints");
+        const loyaltyAvailableDiscount =
+            document.getElementById("loyaltyAvailableDiscount");
+        const loyaltyStatus = document.getElementById("loyaltyStatus");
         const scannerConnectionKey =
             "localmart-pos-usb-scanner-connected";
         const saleScannerStatus =
@@ -577,6 +641,10 @@
 
         paidAmount.addEventListener("input", updateChangePreview);
 
+        if (useLoyaltyDiscount) {
+            useLoyaltyDiscount.addEventListener("change", renderCart);
+        }
+
         document.getElementById("checkoutForm")
                 .addEventListener("submit", event => {
                     if (cart.length === 0) {
@@ -667,19 +735,62 @@
             cartFields.replaceChildren();
 
             let subtotal = 0;
-            let totalDiscount = 0;
+            let availableLoyaltyDiscount = 0;
+            let requiredPoints = 0;
 
-            cart.forEach((item, index) => {
+            const redeemPoints = loyaltyCard
+                ? Number(loyaltyCard.dataset.redeemPoints || 0)
+                : 0;
+            const redeemValue = loyaltyCard
+                ? Number(loyaltyCard.dataset.redeemValue || 0)
+                : 0;
+
+            const pricedItems = cart.map(item => {
                 const grossSubtotal =
                     roundMoney(item.unitPrice * item.quantity);
-                const discountAmount = roundMoney(
+                const loyaltyDiscount = roundMoney(
                     grossSubtotal * item.discountPercent / 100
                 );
-                const netTotal =
-                    roundMoney(grossSubtotal - discountAmount);
+                const lineRequiredPoints = loyaltyDiscount > 0
+                        && redeemPoints > 0
+                        && redeemValue > 0
+                    ? Math.ceil(
+                        loyaltyDiscount * redeemPoints / redeemValue
+                        - 1e-9
+                    )
+                    : 0;
 
                 subtotal += grossSubtotal;
-                totalDiscount += discountAmount;
+                availableLoyaltyDiscount += loyaltyDiscount;
+                requiredPoints += lineRequiredPoints;
+
+                return {
+                    item,
+                    grossSubtotal,
+                    loyaltyDiscount
+                };
+            });
+
+            subtotal = roundMoney(subtotal);
+            availableLoyaltyDiscount =
+                roundMoney(availableLoyaltyDiscount);
+
+            const loyaltyEligible = updateLoyaltyStatus(
+                requiredPoints,
+                availableLoyaltyDiscount
+            );
+            const applyLoyalty = loyaltyEligible
+                    && useLoyaltyDiscount
+                    && useLoyaltyDiscount.checked;
+
+            pricedItems.forEach((pricedItem, index) => {
+                const item = pricedItem.item;
+                const discountAmount = applyLoyalty
+                    ? pricedItem.loyaltyDiscount
+                    : 0;
+                const netTotal = roundMoney(
+                    pricedItem.grossSubtotal - discountAmount
+                );
 
                 const row = document.createElement("tr");
 
@@ -693,10 +804,18 @@
                 details.textContent =
                     `฿${item.unitPrice.toFixed(2)} × ${item.quantity}`
                     + (item.discountPercent > 0
-                        ? `, ${formatPercent(item.discountPercent)}% off`
+                        ? `, max loyalty ${formatPercent(item.discountPercent)}%`
                         : "");
 
                 productCell.append(name, details);
+
+                if (discountAmount > 0) {
+                    const loyaltyDetail = document.createElement("small");
+                    loyaltyDetail.className = "d-block text-success";
+                    loyaltyDetail.textContent =
+                        `Loyalty discount: -฿${discountAmount.toFixed(2)}`;
+                    productCell.append(loyaltyDetail);
+                }
 
                 const quantityCell = document.createElement("td");
                 const quantityInput = document.createElement("input");
@@ -763,11 +882,14 @@
                 );
             });
 
-            currentTotal = roundMoney(subtotal - totalDiscount);
+            const appliedDiscount = applyLoyalty
+                ? availableLoyaltyDiscount
+                : 0;
+            currentTotal = roundMoney(subtotal - appliedDiscount);
             subtotalElement.textContent =
-                roundMoney(subtotal).toFixed(2);
+                subtotal.toFixed(2);
             discountElement.textContent =
-                roundMoney(totalDiscount).toFixed(2);
+                appliedDiscount.toFixed(2);
             finalTotalElement.textContent =
                 currentTotal.toFixed(2);
             cartCount.textContent = String(cart.length);
@@ -783,6 +905,49 @@
             }
 
             updateChangePreview();
+        }
+
+        function updateLoyaltyStatus(requiredPoints, discountAmount) {
+            if (!loyaltyCard || !useLoyaltyDiscount) {
+                return false;
+            }
+
+            const customerPoints =
+                Number(loyaltyCard.dataset.customerPoints || 0);
+            const minimumPoints =
+                Number(loyaltyCard.dataset.minimumPoints || 0);
+            const redemptionEnabled =
+                loyaltyCard.dataset.redemptionEnabled === "true";
+
+            loyaltyRequiredPoints.textContent = String(requiredPoints);
+            loyaltyAvailableDiscount.textContent = discountAmount.toFixed(2);
+
+            let message;
+            let eligible = false;
+
+            if (!redemptionEnabled) {
+                message = "Loyalty redemption is currently disabled.";
+            } else if (requiredPoints === 0) {
+                message = "This cart has no products eligible for a loyalty discount.";
+            } else if (requiredPoints < minimumPoints) {
+                message = `This cart requires ${requiredPoints} points; the minimum is ${minimumPoints}.`;
+            } else if (customerPoints < requiredPoints) {
+                message = `The member needs ${requiredPoints} points to use the complete discount.`;
+            } else {
+                message = `Eligible: use ${requiredPoints} points for a ฿${discountAmount.toFixed(2)} discount.`;
+                eligible = true;
+            }
+
+            loyaltyStatus.className = eligible
+                ? "alert alert-success py-2 small"
+                : "alert alert-warning py-2 small";
+            loyaltyStatus.textContent = message;
+            useLoyaltyDiscount.disabled = !eligible;
+            if (!eligible) {
+                useLoyaltyDiscount.checked = false;
+            }
+
+            return eligible;
         }
 
         function appendHiddenField(name, value) {

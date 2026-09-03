@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -177,6 +178,54 @@ class LoyaltyServiceTest {
         assertThat(result).containsExactly(newest, older);
         verify(loyaltyTransactionRepository)
                 .findTop20ByCustomerIdOrderByTimestampDesc(7L);
+    }
+
+    @Test
+    void redemptionUsesConditionalDeductionAndCreatesRedeemTransaction() {
+        Sale sale = Sale.builder().id(8L).build();
+        Customer customer = customer(120L);
+        when(customerRepository.deductPointsIfAvailable(customer.getId(), 68L))
+                .thenReturn(1);
+        when(customerRepository.findPointBalanceValueById(customer.getId()))
+                .thenReturn(java.util.Optional.of(52L));
+
+        LoyaltyService.LoyaltyRedemption redemption =
+                loyaltyService.redeemPoints(customer, sale, 68L);
+
+        assertThat(redemption.redeemedPoints()).isEqualTo(68L);
+        assertThat(redemption.beforeBalance()).isEqualTo(120L);
+        assertThat(redemption.afterBalance()).isEqualTo(52L);
+        assertThat(customer.getPointBalance()).isEqualTo(52L);
+
+        ArgumentCaptor<LoyaltyTransaction> captor =
+                ArgumentCaptor.forClass(LoyaltyTransaction.class);
+        verify(loyaltyTransactionRepository).save(captor.capture());
+        LoyaltyTransaction transaction = captor.getValue();
+        assertThat(transaction.getType()).isEqualTo(TransactionType.REDEEM);
+        assertThat(transaction.getPoints()).isEqualTo(-68L);
+        assertThat(transaction.getBeforePoint()).isEqualTo(120L);
+        assertThat(transaction.getAfterPoint()).isEqualTo(52L);
+        assertThat(transaction.getSale()).isSameAs(sale);
+    }
+
+    @Test
+    void redemptionRejectsConcurrentOrInsufficientBalance() {
+        Sale sale = Sale.builder().id(8L).build();
+        Customer customer = customer(120L);
+        when(customerRepository.deductPointsIfAvailable(customer.getId(), 68L))
+                .thenReturn(0);
+
+        assertThatThrownBy(() -> loyaltyService.redeemPoints(
+                customer,
+                sale,
+                68L
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no longer sufficient");
+
+        verify(loyaltyTransactionRepository, never()).save(
+                org.mockito.ArgumentMatchers.any(LoyaltyTransaction.class)
+        );
     }
 
     private void assertReversalTransaction(

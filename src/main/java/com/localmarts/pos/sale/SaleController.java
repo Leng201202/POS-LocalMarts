@@ -3,6 +3,7 @@ package com.localmarts.pos.sale;
 import com.localmarts.pos.common.CurrentUserService;
 import com.localmarts.pos.customer.CustomerService;
 import com.localmarts.pos.customer.entity.Customer;
+import com.localmarts.pos.loyalty.service.LoyaltyConfigService;
 import com.localmarts.pos.sale.dto.CreateSaleRequest;
 import com.localmarts.pos.sale.dto.RefundReason;
 import com.localmarts.pos.sale.dto.RefundRequest;
@@ -36,17 +37,20 @@ public class SaleController {
     private final SaleService saleService;
     private final RefundService refundService;
     private final CustomerService customerService;
+    private final LoyaltyConfigService loyaltyConfigService;
     private final CurrentUserService currentUserService;
 
     public SaleController(
             SaleService saleService,
             RefundService refundService,
             CustomerService customerService,
+            LoyaltyConfigService loyaltyConfigService,
             CurrentUserService currentUserService) {
 
         this.saleService = saleService;
         this.refundService = refundService;
         this.customerService = customerService;
+        this.loyaltyConfigService = loyaltyConfigService;
         this.currentUserService = currentUserService;
     }
 
@@ -422,5 +426,11 @@ public class SaleController {
                         : customerPhone
         );
         model.addAttribute("resolvedCustomer", resolvedCustomer);
+        model.addAttribute(
+                "loyaltyConfig",
+                resolvedCustomer == null
+                        ? null
+                        : loyaltyConfigService.getConfig()
+        );
     }
 }

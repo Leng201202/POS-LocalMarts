@@ -376,7 +376,7 @@
                             <label for="redeemPoints"
                                    class="form-label fw-semibold">
 
-                                Redeem Points
+                                Conversion Points
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -403,7 +403,7 @@
                             </div>
 
                             <div class="form-text">
-                                Number of points in one redemption group.
+                                Number of points represented by the configured discount value.
                             </div>
                         </div>
 
@@ -446,7 +446,7 @@
                             <label for="minimumRedeemPoints"
                                    class="form-label fw-semibold">
 
-                                Minimum Redeem Points
+                                Minimum Points Required Per Sale
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -473,7 +473,8 @@
                             </div>
 
                             <div class="form-text">
-                                Must be divisible by the redeem-point value.
+                                Minimum total loyalty points a sale must require before loyalty discounts can be used.
+                                <span class="d-block" id="minimumRedeemValuePreview"></span>
                             </div>
                         </div>
 
@@ -542,6 +543,35 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<script>
+    (() => {
+        const redeemPoints = document.getElementById("redeemPoints");
+        const redeemValue = document.getElementById("redeemValue");
+        const minimumPoints = document.getElementById("minimumRedeemPoints");
+        const preview = document.getElementById("minimumRedeemValuePreview");
+
+        function updateMinimumValuePreview() {
+            const conversionPoints = Number(redeemPoints.value);
+            const conversionValue = Number(redeemValue.value);
+            const minimum = Number(minimumPoints.value);
+
+            if (conversionPoints > 0 && conversionValue > 0 && minimum > 0) {
+                const approximateValue =
+                    minimum * conversionValue / conversionPoints;
+                preview.textContent =
+                    `Approximate loyalty value: ฿${approximateValue.toFixed(2)}`;
+            } else {
+                preview.textContent = "";
+            }
+        }
+
+        [redeemPoints, redeemValue, minimumPoints].forEach(input => {
+            input.addEventListener("input", updateMinimumValuePreview);
+        });
+        updateMinimumValuePreview();
+    })();
 </script>
 
 </body>

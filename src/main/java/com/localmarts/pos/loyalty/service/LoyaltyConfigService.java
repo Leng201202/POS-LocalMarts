@@ -49,8 +49,6 @@ public class LoyaltyConfigService {
     ) {
         LoyaltyConfig currConfig = findOrCreateConfig();
 
-        validateBusinessRules(request, updatedBy, currConfig.getId());
-
         List<AuditDetails> details = new AuditChangeHelper()
                 .addChange("minimumPurchaseAmount", currConfig.getMinimumPurchaseAmount(), request.minimumPurchaseAmount())
                 .addChange("spendingAmount", currConfig.getSpendingAmount(), request.spendingAmount())
@@ -108,17 +106,4 @@ public class LoyaltyConfigService {
         return saved;
     }
 
-    private void validateBusinessRules(
-            LoyaltyConfigRequest request,
-            Long actor,
-            Long rowId
-    ) {
-        if (request.minimumRedeemPoints()
-                % request.redeemPoints() != 0) {
-
-            String message = "Minimum redeem points must be divisible by redeem points.";
-            auditService.logFailed(actor, AuditAction.UPDATE, entity, rowId, "Failed to update loyalty configuration. " + message);
-            throw new IllegalArgumentException(message);
-        }
-    }
 }

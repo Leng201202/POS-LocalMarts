@@ -132,7 +132,7 @@
                         <th>Item</th>
                         <th class="text-end">Unit Price</th>
                         <th class="text-end">Qty</th>
-                        <th class="text-end">Discount</th>
+                        <th class="text-end">Loyalty Discount</th>
                         <th class="text-end">Line Total</th>
                     </tr>
                     </thead>
@@ -168,16 +168,14 @@
                         </td>
 
                         <td class="text-end">
-                            <div th:text="${item.discountPercentSnapshot
-                                .stripTrailingZeros().toPlainString() + '%'}">
-                                0%
-                            </div>
-                            <small class="text-muted">
+                            <span th:if="${item.discountAmount != null and item.discountAmount.signum() > 0}">
                                 -฿<span th:text="${#numbers.formatDecimal(
                                     item.discountAmount, 1, 2)}">
                                     0.00
                                 </span>
-                            </small>
+                            </span>
+                            <span th:unless="${item.discountAmount != null and item.discountAmount.signum() > 0}"
+                                  class="text-muted">&mdash;</span>
                         </td>
 
                         <td class="text-end fw-semibold">
@@ -204,11 +202,18 @@
                         </span>
                     </div>
 
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Discount</span>
+                    <div th:if="${sale.pointDiscount != null and sale.pointDiscount.signum() > 0}"
+                         class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Points Redeemed</span>
+                        <span th:text="${sale.pointRedeemed}">0</span>
+                    </div>
+
+                    <div th:if="${sale.pointDiscount != null and sale.pointDiscount.signum() > 0}"
+                         class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Loyalty Discount</span>
                         <span>
                             -฿<span th:text="${#numbers.formatDecimal(
-                                sale.totalDiscount, 1, 2)}">
+                                sale.pointDiscount, 1, 2)}">
                                 0.00
                             </span>
                         </span>

@@ -150,13 +150,16 @@
 
                     <div sec:authorize="hasRole('ADMIN')"
                          class="col-md-3 mb-3">
-                        <label class="form-label">Discount Percent</label>
+                        <label class="form-label">Max Loyalty Discount %</label>
                         <input type="number"
                                th:field="*{discountPercent}"
                                class="form-control"
                                min="0"
                                max="100"
                                step="0.01">
+                        <div class="form-text">
+                            Maximum percentage discount members can receive on this product when using loyalty points.
+                        </div>
                     </div>
 
                     <div sec:authorize="hasRole('ADMIN')"

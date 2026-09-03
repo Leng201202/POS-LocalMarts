@@ -92,7 +92,7 @@
                         <th>Return</th>
                         <th>Item</th>
                         <th>Unit Price</th>
-                        <th>Discount</th>
+                        <th>Loyalty Discount</th>
                         <th>Line Net Total</th>
                         <th>Original Qty</th>
                         <th style="min-width: 130px;">Refund Qty</th>
@@ -121,10 +121,11 @@
                             &#3647;<span th:text="${#numbers.formatDecimal(saleItem.unitPrice, 1, 2)}">0.00</span>
                         </td>
                         <td>
-                            <span th:text="${saleItem.discountPercentSnapshot.stripTrailingZeros().toPlainString() + '%'}">0%</span>
-                            <div class="text-muted small">
+                            <span th:if="${saleItem.discountAmount != null and saleItem.discountAmount.signum() > 0}">
                                 -&#3647;<span th:text="${#numbers.formatDecimal(saleItem.discountAmount, 1, 2)}">0.00</span>
-                            </div>
+                            </span>
+                            <span th:unless="${saleItem.discountAmount != null and saleItem.discountAmount.signum() > 0}"
+                                  class="text-muted">None</span>
                         </td>
                         <td class="fw-semibold">
                             &#3647;<span th:text="${#numbers.formatDecimal(saleItem.netTotal, 1, 2)}">0.00</span>

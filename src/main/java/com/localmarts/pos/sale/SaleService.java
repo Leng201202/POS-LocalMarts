@@ -5,6 +5,7 @@ import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.customer.CustomerService;
 import com.localmarts.pos.customer.entity.Customer;
 import com.localmarts.pos.inventory.service.InventoryService;
+import com.localmarts.pos.loyalty.entity.LoyaltyConfig;
 import com.localmarts.pos.loyalty.service.LoyaltyService;
 import com.localmarts.pos.product.ProductRepository;
 import com.localmarts.pos.product.ProductService;
@@ -88,6 +89,9 @@ public class SaleService {
                 );
 
         Customer customer = resolveMemberCustomer(request.getCustomerId());
+        LoyaltyConfig loyaltyConfig = customer == null
+                ? null
+                : loyaltyService.getCurrentConfig();
 
         Map<Long, Integer> requestedQuantities =
                 combineRequestedQuantities(request.getItems());
@@ -112,7 +116,8 @@ public class SaleService {
                 .build();
 
         BigDecimal subtotal = ZERO_MONEY;
-        BigDecimal totalDiscount = ZERO_MONEY;
+        BigDecimal pointDiscount = ZERO_MONEY;
+        long totalRequiredPoints = 0L;
 
         for (Map.Entry<Long, Integer> entry : requestedQuantities.entrySet()) {
             Product product = productRepository
@@ -132,7 +137,30 @@ public class SaleService {
 
             sale.addItem(item);
             subtotal = subtotal.add(item.getGrossSubtotal());
-            totalDiscount = totalDiscount.add(item.getDiscountAmount());
+
+            if (request.isUseLoyaltyDiscount()) {
+                LoyaltyLineDiscount loyaltyLineDiscount =
+                        calculateLoyaltyLineDiscount(item, loyaltyConfig);
+                item.setDiscountAmount(loyaltyLineDiscount.discountAmount());
+                item.setNetTotal(money(
+                        item.getGrossSubtotal().subtract(
+                                loyaltyLineDiscount.discountAmount()
+                        )
+                ));
+                pointDiscount = pointDiscount.add(
+                        loyaltyLineDiscount.discountAmount()
+                );
+                try {
+                    totalRequiredPoints = Math.addExact(
+                            totalRequiredPoints,
+                            loyaltyLineDiscount.requiredPoints()
+                    );
+                } catch (ArithmeticException exception) {
+                    throw new IllegalArgumentException(
+                            "Required loyalty points exceed the supported limit"
+                    );
+                }
+            }
 
             inventoryService.sale(
                     product.getId(),
@@ -142,9 +170,17 @@ public class SaleService {
             );
         }
 
-        BigDecimal totalAmount = money(
-                subtotal.subtract(totalDiscount)
-        );
+        if (request.isUseLoyaltyDiscount()) {
+            validateLoyaltyRedemption(
+                    customer,
+                    loyaltyConfig,
+                    totalRequiredPoints,
+                    pointDiscount
+            );
+        }
+
+        BigDecimal totalDiscount = money(pointDiscount);
+        BigDecimal totalAmount = money(subtotal.subtract(totalDiscount));
         BigDecimal paidAmount = validatePaidAmount(
                 request.getPaidAmount()
         );
@@ -161,7 +197,9 @@ public class SaleService {
                         : ZERO_MONEY;
 
         sale.setSubtotal(money(subtotal));
-        sale.setTotalDiscount(money(totalDiscount));
+        sale.setTotalDiscount(totalDiscount);
+        sale.setPointDiscount(totalDiscount);
+        sale.setPointRedeemed(toPointInteger(totalRequiredPoints));
         sale.setTotalAmount(totalAmount);
         sale.setPaidAmount(paidAmount);
         sale.setChangeAmount(changeAmount);
@@ -170,10 +208,19 @@ public class SaleService {
         Sale savedSale = saleRepository.save(sale);
 
         if (customer != null) {
+            if (request.isUseLoyaltyDiscount()) {
+                loyaltyService.redeemPoints(
+                        customer,
+                        savedSale,
+                        totalRequiredPoints
+                );
+            }
+
             long earnedPoints = loyaltyService.earnPoint(
                     customer,
                     savedSale,
-                    totalAmount
+                    totalAmount,
+                    loyaltyConfig
             );
 
             if (earnedPoints > 0) {
@@ -359,13 +406,6 @@ public class SaleService {
         BigDecimal grossSubtotal = money(
                 unitPrice.multiply(BigDecimal.valueOf(quantity))
         );
-        BigDecimal discountAmount = grossSubtotal
-                .multiply(discountPercent)
-                .divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
-        BigDecimal netTotal = money(
-                grossSubtotal.subtract(discountAmount)
-        );
-
         String unitSnapshot = product.getUnit() == null
                 ? null
                 : product.getUnit().getName();
@@ -385,12 +425,120 @@ public class SaleService {
                 .unitPrice(unitPrice)
                 .grossSubtotal(grossSubtotal)
                 .discountPercentSnapshot(discountPercent)
-                .discountAmount(discountAmount)
-                .netTotal(netTotal)
+                .discountAmount(ZERO_MONEY)
+                .netTotal(grossSubtotal)
                 .costPriceSnapshot(costPriceSnapshot)
                 .saleStatus(SaleStatus.COMPLETED)
                 .refundQuantity(0)
                 .build();
+    }
+
+    private LoyaltyLineDiscount calculateLoyaltyLineDiscount(
+            SaleItem item,
+            LoyaltyConfig config
+    ) {
+        if (config == null) {
+            throw new IllegalArgumentException(
+                    "An active member is required to use loyalty discounts"
+            );
+        }
+
+        BigDecimal discountPercent = item.getDiscountPercentSnapshot();
+        if (discountPercent == null
+                || discountPercent.compareTo(BigDecimal.ZERO) <= 0) {
+            return new LoyaltyLineDiscount(ZERO_MONEY, 0L);
+        }
+
+        validateRedemptionConversion(config);
+
+        BigDecimal discountAmount = item.getGrossSubtotal()
+                .multiply(discountPercent)
+                .divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
+        if (discountAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return new LoyaltyLineDiscount(ZERO_MONEY, 0L);
+        }
+
+        long requiredPoints;
+        try {
+            requiredPoints = discountAmount
+                    .multiply(BigDecimal.valueOf(config.getRedeemPoints()))
+                    .divide(config.getRedeemValue(), 0, RoundingMode.CEILING)
+                    .longValueExact();
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException(
+                    "Loyalty point requirement exceeds the supported limit"
+            );
+        }
+
+        return new LoyaltyLineDiscount(money(discountAmount), requiredPoints);
+    }
+
+    private void validateLoyaltyRedemption(
+            Customer customer,
+            LoyaltyConfig config,
+            long totalRequiredPoints,
+            BigDecimal pointDiscount
+    ) {
+        if (customer == null) {
+            throw new IllegalArgumentException(
+                    "An active member is required to use loyalty discounts"
+            );
+        }
+        if (config == null || !config.isRedemptionEnabled()) {
+            throw new IllegalArgumentException(
+                    "Loyalty redemption is currently unavailable"
+            );
+        }
+        validateRedemptionConversion(config);
+        if (totalRequiredPoints <= 0
+                || pointDiscount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "The cart has no products eligible for a loyalty discount"
+            );
+        }
+        if (config.getMinimumRedeemPoints() == null
+                || config.getMinimumRedeemPoints() <= 0) {
+            throw new IllegalStateException(
+                    "Minimum loyalty points per sale must be greater than zero"
+            );
+        }
+        if (totalRequiredPoints < config.getMinimumRedeemPoints()) {
+            throw new IllegalArgumentException(
+                    "This cart requires " + totalRequiredPoints
+                            + " points, below the minimum of "
+                            + config.getMinimumRedeemPoints()
+            );
+        }
+        long pointBalance = customer.getPointBalance() == null
+                ? 0L
+                : customer.getPointBalance();
+        if (pointBalance < totalRequiredPoints) {
+            throw new IllegalArgumentException(
+                    "The member needs " + totalRequiredPoints
+                            + " points to use the complete loyalty discount"
+            );
+        }
+    }
+
+    private void validateRedemptionConversion(LoyaltyConfig config) {
+        if (config.getRedeemPoints() == null
+                || config.getRedeemPoints() <= 0
+                || config.getRedeemValue() == null
+                || config.getRedeemValue().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException(
+                    "Loyalty redemption conversion must be greater than zero"
+            );
+        }
+    }
+
+    private int toPointInteger(long points) {
+        try {
+            return Math.toIntExact(points);
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException(
+                    "Required loyalty points exceed the Sale limit"
+            );
+        }
     }
 
     private BigDecimal validatePaidAmount(BigDecimal paidAmount) {
@@ -467,5 +615,11 @@ public class SaleService {
         }
 
         return note.trim();
+    }
+
+    private record LoyaltyLineDiscount(
+            BigDecimal discountAmount,
+            long requiredPoints
+    ) {
     }
 }

@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:file:localmart-pos-tests?mode=memory&cache=shared
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  thymeleaf:
+    cache: false
+
+server:
+  ssl:
+    enabled: false

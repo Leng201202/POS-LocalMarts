@@ -3,6 +3,7 @@ package com.localmarts.pos.customer;
 
 import com.localmarts.pos.customer.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,23 @@ public interface CustomerRepository extends JpaRepository<Customer,Long> {
     boolean existsByPhoneNumberAndActiveTrueAndDeletedAtIsNull(String phone);
     Optional<Customer> findByPhoneNumberAndActiveTrueAndDeletedAtIsNull(String phone);
     Optional<Customer> findByIdAndActiveTrueAndDeletedAtIsNull(Long id);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Customer c
+        SET c.pointBalance = COALESCE(c.pointBalance, 0) - :points
+        WHERE c.id = :customerId
+          AND c.active = true
+          AND c.deletedAt IS NULL
+          AND COALESCE(c.pointBalance, 0) >= :points
+    """)
+    int deductPointsIfAvailable(
+            @Param("customerId") Long customerId,
+            @Param("points") Long points
+    );
+
+    @Query("SELECT c.pointBalance FROM Customer c WHERE c.id = :customerId")
+    Optional<Long> findPointBalanceValueById(@Param("customerId") Long customerId);
 
     @Query("""
         SELECT c

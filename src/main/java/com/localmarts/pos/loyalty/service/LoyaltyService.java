@@ -41,6 +41,10 @@ public class LoyaltyService {
         );
     }
 
+    public LoyaltyConfig getCurrentConfig() {
+        return loyaltyConfigService.getConfig();
+    }
+
     public long calculateEarnPoint(
             BigDecimal eligibleAmount,
             LoyaltyConfig config
@@ -141,7 +145,22 @@ public class LoyaltyService {
 
     @Transactional
     public long earnPoint(Customer customer,Sale sale,BigDecimal eligibleAmount){
-        long earnPoint=calculateEarnPoint(eligibleAmount);
+        return earnPoint(
+                customer,
+                sale,
+                eligibleAmount,
+                loyaltyConfigService.getConfig()
+        );
+    }
+
+    @Transactional
+    public long earnPoint(
+            Customer customer,
+            Sale sale,
+            BigDecimal eligibleAmount,
+            LoyaltyConfig config
+    ) {
+        long earnPoint=calculateEarnPoint(eligibleAmount, config);
         if(earnPoint<=0){
             return 0L;
         }
@@ -160,50 +179,59 @@ public class LoyaltyService {
         loyaltyTransactionRepository.save(transaction);
         return earnPoint;
     }
-    public BigDecimal redeemPoint(Customer customer,Sale sale,long requestedPoint){
-        LoyaltyConfig config=loyaltyConfigService.getConfig();
-        if(!config.isRedemptionEnabled()){
-            throw new IllegalArgumentException("Redemption is currently disabled");
+
+    @Transactional
+    public LoyaltyRedemption redeemPoints(
+            Customer customer,
+            Sale sale,
+            long requiredPoints
+    ) {
+        if (customer == null || customer.getId() == null) {
+            throw new IllegalArgumentException(
+                    "An active member is required to use loyalty discounts"
+            );
         }
-        if(requestedPoint<=0){
-            return BigDecimal.ZERO;
+        if (sale == null) {
+            throw new IllegalArgumentException("Sale is required for redemption");
         }
-        BigDecimal discountAmount = getBigDecimal(customer, requestedPoint, config);
-        long beforePoint=customer.getPointBalance();
-        long afterPoint=beforePoint-requestedPoint;
+        if (requiredPoints <= 0) {
+            throw new IllegalArgumentException(
+                    "Required loyalty points must be greater than zero"
+            );
+        }
+
+        int deducted = customerRepository.deductPointsIfAvailable(
+                customer.getId(),
+                requiredPoints
+        );
+        if (deducted != 1) {
+            throw new IllegalArgumentException(
+                    "Loyalty points are no longer sufficient. Refresh the member and try again"
+            );
+        }
+
+        long afterPoint = customerRepository
+                .findPointBalanceValueById(customer.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Unable to reload the member point balance"
+                ));
+        long beforePoint = Math.addExact(afterPoint, requiredPoints);
         customer.setPointBalance(afterPoint);
-        customerRepository.save(customer);
 
         LoyaltyTransaction transaction=LoyaltyTransaction.builder()
                 .customer(customer)
                 .sale(sale)
                 .type(TransactionType.REDEEM)
-                .points(-requestedPoint)
+                .points(-requiredPoints)
                 .beforePoint(beforePoint)
                 .afterPoint(afterPoint)
                 .build();
         loyaltyTransactionRepository.save(transaction);
-        return discountAmount;
-    }
-
-    private static BigDecimal getBigDecimal(Customer customer, long requestedPoint, LoyaltyConfig config) {
-        if(requestedPoint < config.getMinimumRedeemPoints()){
-            throw new IllegalArgumentException("Minimum redeem point is "+ config.getMinimumRedeemPoints());
-        }
-        long currentBalance= customer.getPointBalance();
-        if(requestedPoint >currentBalance) {
-            throw new IllegalArgumentException("Customer don't have point enough");
-        }
-        if(requestedPoint % config.getRedeemPoints()!=0){
-            throw new IllegalArgumentException(
-                    "Point must be redeem in groups of "+ config.getRedeemPoints()
-            );
-        }
-        long redeemGroup= requestedPoint / config.getRedeemPoints();
-        BigDecimal discountAmount= config.getRedeemValue().multiply(
-                BigDecimal.valueOf(redeemGroup)
+        return new LoyaltyRedemption(
+                requiredPoints,
+                beforePoint,
+                afterPoint
         );
-        return discountAmount;
     }
 
     private void applyPointMovement(Customer customer, Sale sale, long pointChange, TransactionType type){
@@ -240,5 +268,12 @@ public class LoyaltyService {
         public static LoyaltyRefundImpact none() {
             return new LoyaltyRefundImpact(0L, 0L, 0L, 0L, 0L);
         }
+    }
+
+    public record LoyaltyRedemption(
+            long redeemedPoints,
+            long beforeBalance,
+            long afterBalance
+    ) {
     }
 }

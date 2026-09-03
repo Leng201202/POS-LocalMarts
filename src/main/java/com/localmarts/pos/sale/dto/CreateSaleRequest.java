@@ -19,6 +19,8 @@ public class CreateSaleRequest {
 
     private Long customerId;
 
+    private boolean useLoyaltyDiscount;
+
     @NotNull(message = "Paid amount is required")
     @DecimalMin(value = "0.00", message = "Paid amount cannot be negative")
     private BigDecimal paidAmount;
@@ -43,6 +45,14 @@ public class CreateSaleRequest {
 
     public void setCustomerId(Long customerId) {
         this.customerId = customerId;
+    }
+
+    public boolean isUseLoyaltyDiscount() {
+        return useLoyaltyDiscount;
+    }
+
+    public void setUseLoyaltyDiscount(boolean useLoyaltyDiscount) {
+        this.useLoyaltyDiscount = useLoyaltyDiscount;
     }
 
     public BigDecimal getPaidAmount() {
