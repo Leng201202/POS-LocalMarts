@@ -120,26 +120,50 @@ public class LoyaltyService {
             );
         }
 
-        long afterPoint = beforePoint - pointsToReverse;
-        customer.setPointBalance(afterPoint);
-        customerRepository.save(customer);
-
-        LoyaltyTransaction transaction = LoyaltyTransaction.builder()
-                .customer(customer)
-                .sale(sale)
-                .type(TransactionType.REFUND_EARN_REVERSAL)
-                .points(-pointsToReverse)
-                .beforePoint(beforePoint)
-                .afterPoint(afterPoint)
-                .build();
-        loyaltyTransactionRepository.save(transaction);
+        PointMovement movement = applyRefundPointMovement(
+                customer,
+                sale,
+                -pointsToReverse,
+                TransactionType.REFUND_EARN_REVERSAL
+        );
 
         return new LoyaltyRefundImpact(
                 originalEarned,
                 remainingAllowed,
                 pointsToReverse,
-                beforePoint,
-                afterPoint
+                movement.beforeBalance(),
+                movement.afterBalance()
+        );
+    }
+
+    @Transactional
+    public LoyaltyRestoreImpact restoreRedeemedPointsForRefund(
+            Customer customer,
+            Sale sale,
+            long pointsToRestore
+    ) {
+        if (customer == null || customer.getId() == null || sale == null) {
+            if (pointsToRestore > 0) {
+                throw new IllegalArgumentException(
+                        "A customer and Sale are required to restore redeemed points"
+                );
+            }
+            return LoyaltyRestoreImpact.none(currentBalance(customer));
+        }
+        if (pointsToRestore <= 0) {
+            return LoyaltyRestoreImpact.none(currentBalance(customer));
+        }
+
+        PointMovement movement = applyRefundPointMovement(
+                customer,
+                sale,
+                pointsToRestore,
+                TransactionType.REFUND_REDEEM_RESTORE
+        );
+        return new LoyaltyRestoreImpact(
+                pointsToRestore,
+                movement.beforeBalance(),
+                movement.afterBalance()
         );
     }
 
@@ -258,6 +282,48 @@ public class LoyaltyService {
         return loyaltyTransactionRepository.filter(type);
     }
 
+    private PointMovement applyRefundPointMovement(
+            Customer customer,
+            Sale sale,
+            long pointChange,
+            TransactionType type
+    ) {
+        int updated = customerRepository.applyPointMovement(
+                customer.getId(),
+                pointChange
+        );
+        if (updated != 1) {
+            throw new IllegalStateException(
+                    "Unable to update the member point balance for the refund"
+            );
+        }
+
+        long afterPoint = customerRepository
+                .findPointBalanceValueById(customer.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Unable to reload the member point balance"
+                ));
+        long beforePoint = Math.subtractExact(afterPoint, pointChange);
+        customer.setPointBalance(afterPoint);
+
+        LoyaltyTransaction transaction = LoyaltyTransaction.builder()
+                .customer(customer)
+                .sale(sale)
+                .type(type)
+                .points(pointChange)
+                .beforePoint(beforePoint)
+                .afterPoint(afterPoint)
+                .build();
+        loyaltyTransactionRepository.save(transaction);
+        return new PointMovement(beforePoint, afterPoint);
+    }
+
+    private long currentBalance(Customer customer) {
+        return customer == null || customer.getPointBalance() == null
+                ? 0L
+                : customer.getPointBalance();
+    }
+
     public record LoyaltyRefundImpact(
             long originalEarnedPoints,
             long remainingAllowedPoints,
@@ -275,5 +341,18 @@ public class LoyaltyService {
             long beforeBalance,
             long afterBalance
     ) {
+    }
+
+    public record LoyaltyRestoreImpact(
+            long restoredPoints,
+            long beforeBalance,
+            long afterBalance
+    ) {
+        public static LoyaltyRestoreImpact none(long balance) {
+            return new LoyaltyRestoreImpact(0L, balance, balance);
+        }
+    }
+
+    private record PointMovement(long beforeBalance, long afterBalance) {
     }
 }

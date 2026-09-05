@@ -28,6 +28,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/cashier")
@@ -221,7 +224,7 @@ public class SaleController {
     @PostMapping("/sales/{saleId}/refund")
     public String processRefund(
             @PathVariable Long saleId,
-            @RequestParam(defaultValue = "preview") String action,
+            @RequestParam(defaultValue = "confirm") String action,
             @Valid @ModelAttribute("refundRequest") RefundRequest request,
             BindingResult bindingResult,
             Authentication authentication,
@@ -242,7 +245,8 @@ public class SaleController {
 
         if ("preview".equals(action)) {
             try {
-                BigDecimal preview = refundService.previewRefund(saleId, request);
+                RefundService.RefundPreview preview =
+                        refundService.previewRefund(saleId, request);
                 Sale sale = refundService.getRefundableSale(saleId);
                 addRefundFormData(model, sale, request, preview);
                 return "cashier/refund/form";
@@ -293,6 +297,14 @@ public class SaleController {
             redirectAttributes.addFlashAttribute(
                     "returnedUnitCount",
                     outcome.returnedUnitCount()
+            );
+            redirectAttributes.addFlashAttribute(
+                    "restoredRedeemedPoints",
+                    outcome.restoredRedeemedPoints()
+            );
+            redirectAttributes.addFlashAttribute(
+                    "reversedEarnedPoints",
+                    outcome.reversedEarnedPoints()
             );
 
             return "redirect:/cashier/sales/"
@@ -374,13 +386,27 @@ public class SaleController {
             Model model,
             Sale sale,
             RefundRequest request,
-            BigDecimal refundPreview
+            RefundService.RefundPreview refundPreview
     ) {
         model.addAttribute("sale", sale);
         model.addAttribute("refundRequest", request);
         model.addAttribute("returnConditions", ReturnCondition.values());
         model.addAttribute("refundReasons", RefundReason.values());
+        model.addAttribute(
+                "refundLineUiData",
+                refundService.getRefundLineUiData(sale)
+        );
         model.addAttribute("refundPreview", refundPreview);
+        Map<Long, RefundService.RefundLinePreview> previewLines =
+                refundPreview == null
+                        ? Map.of()
+                        : refundPreview.lines().stream().collect(
+                                Collectors.toMap(
+                                        RefundService.RefundLinePreview::saleItemId,
+                                        Function.identity()
+                                )
+                        );
+        model.addAttribute("refundPreviewLines", previewLines);
     }
 
     private void addSalePageData(Model model, String query) {

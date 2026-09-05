@@ -152,6 +152,22 @@
                                        : '')}">
                                 Size / Unit
                             </small>
+                            <small th:if="${item.discountAmount != null
+                                           and item.discountAmount.signum() > 0
+                                           and item.discountedUnitCount != null}"
+                                   class="d-block text-success">
+                                Loyalty
+                                <span th:text="${item.discountPercentSnapshot.stripTrailingZeros().toPlainString()}">10</span>%
+                                applied to
+                                <span th:text="${item.discountedUnitCount}">2</span>
+                                of <span th:text="${item.quantity}">5</span> units
+                            </small>
+                            <small th:if="${item.discountAmount != null
+                                           and item.discountAmount.signum() > 0
+                                           and item.discountedUnitCount == null}"
+                                   class="d-block text-success">
+                                Loyalty discount applied
+                            </small>
                         </td>
 
                         <td class="text-end">
@@ -249,6 +265,12 @@
                         </span>
                     </div>
                 </div>
+            </div>
+
+            <div th:if="${sale.pointDiscount != null and sale.pointDiscount.signum() > 0}"
+                 class="alert alert-light border small mt-4 mb-0">
+                For partially loyalty-discounted quantities, regular-price units are refunded first.
+                Loyalty points are restored when loyalty-discounted units are returned.
             </div>
 
             <div th:if="${sale.note != null}"

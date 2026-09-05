@@ -1,6 +1,10 @@
 package com.localmarts.pos.sale.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class RefundItemRequest {
 
@@ -11,7 +15,8 @@ public class RefundItemRequest {
 
     private Integer quantity = 0;
 
-    private ReturnCondition condition;
+    @Valid
+    private List<ReturnBreakdownRequest> breakdowns = new ArrayList<>();
 
     public Long getSaleItemId() {
         return saleItemId;
@@ -37,11 +42,11 @@ public class RefundItemRequest {
         this.quantity = quantity;
     }
 
-    public ReturnCondition getCondition() {
-        return condition;
+    public List<ReturnBreakdownRequest> getBreakdowns() {
+        return breakdowns;
     }
 
-    public void setCondition(ReturnCondition condition) {
-        this.condition = condition;
+    public void setBreakdowns(List<ReturnBreakdownRequest> breakdowns) {
+        this.breakdowns = breakdowns;
     }
 }

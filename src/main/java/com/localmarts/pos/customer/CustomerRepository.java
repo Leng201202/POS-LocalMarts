@@ -34,6 +34,17 @@ public interface CustomerRepository extends JpaRepository<Customer,Long> {
             @Param("points") Long points
     );
 
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE Customer c
+        SET c.pointBalance = COALESCE(c.pointBalance, 0) + :pointChange
+        WHERE c.id = :customerId
+    """)
+    int applyPointMovement(
+            @Param("customerId") Long customerId,
+            @Param("pointChange") Long pointChange
+    );
+
     @Query("SELECT c.pointBalance FROM Customer c WHERE c.id = :customerId")
     Optional<Long> findPointBalanceValueById(@Param("customerId") Long customerId);
 

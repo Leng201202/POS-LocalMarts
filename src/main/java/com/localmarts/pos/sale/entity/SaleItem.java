@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "sale_items")
@@ -67,7 +69,7 @@ public class SaleItem {
             nullable = false,
             precision = 5,
             scale = 2
-    )
+    ) 
     private BigDecimal discountPercentSnapshot;
 
     @Column(name = "discount_amount", nullable = false, precision = 14, scale = 2)
@@ -86,4 +88,39 @@ public class SaleItem {
     @Column(name = "refund_quantity", nullable = false)
     @Builder.Default
     private Integer refundQuantity = 0;
+
+    @Transient
+    public Integer getDiscountedUnitCount() {
+        if (discountAmount == null
+                || discountAmount.compareTo(BigDecimal.ZERO) == 0) {
+            return 0;
+        }
+        if (discountAmount.signum() < 0
+                || quantity == null
+                || quantity < 1
+                || unitPrice == null
+                || discountPercentSnapshot == null
+                || discountPercentSnapshot.signum() <= 0) {
+            return null;
+        }
+
+        BigDecimal unitDiscount = unitPrice
+                .multiply(discountPercentSnapshot)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        if (unitDiscount.signum() <= 0) {
+            return null;
+        }
+
+        BigDecimal[] division = discountAmount.divideAndRemainder(unitDiscount);
+        if (division[1].compareTo(BigDecimal.ZERO) != 0) {
+            return null;
+        }
+
+        try {
+            int discountedUnits = division[0].intValueExact();
+            return discountedUnits <= quantity ? discountedUnits : null;
+        } catch (ArithmeticException exception) {
+            return null;
+        }
+    }
 }

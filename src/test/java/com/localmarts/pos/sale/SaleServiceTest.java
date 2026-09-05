@@ -184,7 +184,7 @@ class SaleServiceTest {
     }
 
     @Test
-    void allOrNothingRejectsCartBelowMinimumWithoutApplyingPartialDiscount() {
+    void selectedCompleteBenefitsMustMeetMinimumPointsPerSale() {
         Customer customer = Customer.builder().id(3L).pointBalance(120L).build();
         LoyaltyConfig config = config(true, 60L);
         Product coke = product(1L, "Coke", "25.00", "10.00", 10);
@@ -205,9 +205,44 @@ class SaleServiceTest {
     }
 
     @Test
-    void allOrNothingRejectsBalanceBelowCompleteCartRequirement() {
-        Customer customer = Customer.builder().id(3L).pointBalance(67L).build();
-        LoyaltyConfig config = config(true, 50L);
+    void balanceThatCannotCoverFullCartReceivesAffordableCompleteSubset() {
+        Customer customer = Customer.builder().id(3L).pointBalance(60L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product coke = product(1L, "Coke", "25.00", "10.00", 10);
+        Product dorito = product(2L, "Dorito", "35.00", "5.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(coke));
+        when(productRepository.findByIdAndDeletedAtIsNull(2L)).thenReturn(Optional.of(dorito));
+        when(loyaltyService.earnPoint(
+                eq(customer),
+                any(Sale.class),
+                eq(new BigDecimal("80.00")),
+                eq(config)
+        )).thenReturn(8L);
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "80.00", item(1L, 2), item(2L, 1)),
+                ACTOR_ID
+        );
+
+        assertThat(sale.getSubtotal()).isEqualByComparingTo("85.00");
+        assertThat(sale.getPointRedeemed()).isEqualTo(50);
+        assertThat(sale.getPointDiscount()).isEqualByComparingTo("5.00");
+        assertThat(sale.getTotalAmount()).isEqualByComparingTo("80.00");
+        assertThat(sale.getItems())
+                .extracting(item -> item.getDiscountAmount().toPlainString())
+                .containsExactly("5.00", "0.00");
+        assertThat(sale.getItems())
+                .extracting(item -> item.getNetTotal().toPlainString())
+                .containsExactly("45.00", "35.00");
+        verify(loyaltyService).redeemPoints(customer, sale, 50L);
+    }
+
+    @Test
+    void affordableBenefitBelowMinimumLeavesRedemptionUnavailable() {
+        Customer customer = Customer.builder().id(3L).pointBalance(38L).build();
+        LoyaltyConfig config = config(true, 30L);
         Product coke = product(1L, "Coke", "25.00", "10.00", 10);
         Product dorito = product(2L, "Dorito", "35.00", "5.00", 10);
         when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
@@ -216,11 +251,181 @@ class SaleServiceTest {
         when(productRepository.findByIdAndDeletedAtIsNull(2L)).thenReturn(Optional.of(dorito));
 
         assertThatThrownBy(() -> saleService.checkout(
-                request(3L, true, "78.25", item(1L, 2), item(2L, 1)),
+                request(3L, true, "83.25", item(1L, 2), item(2L, 1)),
                 ACTOR_ID
         ))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("complete loyalty discount");
+                .hasMessageContaining("only 25 points")
+                .hasMessageContaining("minimum redemption of 30");
+
+        verify(loyaltyService, never()).redeemPoints(any(), any(), anyLong());
+        verify(saleRepository, never()).save(any(Sale.class));
+    }
+
+    @Test
+    void allocatesCompleteBenefitsPerUnitAcrossProducts() {
+        Customer customer = Customer.builder().id(3L).pointBalance(43L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product coke = product(1L, "Coke", "25.00", "10.00", 10);
+        Product dorito = product(2L, "Dorito", "35.00", "5.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(coke));
+        when(productRepository.findByIdAndDeletedAtIsNull(2L)).thenReturn(Optional.of(dorito));
+        when(loyaltyService.earnPoint(
+                eq(customer),
+                any(Sale.class),
+                eq(new BigDecimal("80.75")),
+                eq(config)
+        )).thenReturn(8L);
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "80.75", item(1L, 2), item(2L, 1)),
+                ACTOR_ID
+        );
+
+        assertThat(sale.getPointRedeemed()).isEqualTo(43);
+        assertThat(sale.getPointDiscount()).isEqualByComparingTo("4.25");
+        assertThat(sale.getTotalAmount()).isEqualByComparingTo("80.75");
+        assertThat(sale.getPointEarned()).isEqualTo(8);
+        assertThat(sale.getItems().get(0).getDiscountAmount())
+                .isEqualByComparingTo("2.50");
+        assertThat(sale.getItems().get(0).getDiscountedUnitCount()).isEqualTo(1);
+        assertThat(sale.getItems().get(1).getDiscountAmount())
+                .isEqualByComparingTo("1.75");
+        assertThat(sale.getItems().get(1).getDiscountedUnitCount()).isEqualTo(1);
+        verify(loyaltyService).redeemPoints(customer, sale, 43L);
+        verify(loyaltyService).earnPoint(
+                customer,
+                sale,
+                new BigDecimal("80.75"),
+                config
+        );
+    }
+
+    @Test
+    void quantityFiveWithSixtyPointsDiscountsExactlyTwoUnits() {
+        Customer customer = Customer.builder().id(3L).pointBalance(60L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product coke = product(1L, "Coke", "25.00", "10.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(coke));
+        when(loyaltyService.earnPoint(
+                eq(customer),
+                any(Sale.class),
+                eq(new BigDecimal("120.00")),
+                eq(config)
+        )).thenReturn(12L);
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "120.00", item(1L, 5)),
+                ACTOR_ID
+        );
+        var saleItem = sale.getItems().getFirst();
+
+        assertThat(sale.getPointRedeemed()).isEqualTo(50);
+        assertThat(sale.getPointDiscount()).isEqualByComparingTo("5.00");
+        assertThat(sale.getTotalAmount()).isEqualByComparingTo("120.00");
+        assertThat(sale.getPointEarned()).isEqualTo(12);
+        assertThat(saleItem.getDiscountPercentSnapshot()).isEqualByComparingTo("10.00");
+        assertThat(saleItem.getDiscountAmount()).isEqualByComparingTo("5.00");
+        assertThat(saleItem.getNetTotal()).isEqualByComparingTo("120.00");
+        assertThat(saleItem.getDiscountedUnitCount()).isEqualTo(2);
+        verify(loyaltyService).redeemPoints(customer, sale, 50L);
+    }
+
+    @Test
+    void quantityFiveDiscountsAllUnitsWhenBalanceCoversEveryUnit() {
+        Customer customer = Customer.builder().id(3L).pointBalance(125L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product coke = product(1L, "Coke", "25.00", "10.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(coke));
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "112.50", item(1L, 5)),
+                ACTOR_ID
+        );
+
+        assertThat(sale.getPointRedeemed()).isEqualTo(125);
+        assertThat(sale.getPointDiscount()).isEqualByComparingTo("12.50");
+        assertThat(sale.getItems().getFirst().getDiscountedUnitCount())
+                .isEqualTo(5);
+        verify(loyaltyService).redeemPoints(customer, sale, 125L);
+    }
+
+    @Test
+    void skipsUnaffordableHigherPercentageAndSelectsLaterAffordableBenefit() {
+        Customer customer = Customer.builder().id(3L).pointBalance(40L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product expensive = product(10L, "Expensive", "60.00", "10.00", 10);
+        Product affordable = product(2L, "Affordable", "70.00", "5.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(expensive));
+        when(productRepository.findByIdAndDeletedAtIsNull(2L))
+                .thenReturn(Optional.of(affordable));
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "126.50", item(10L, 1), item(2L, 1)),
+                ACTOR_ID
+        );
+
+        assertThat(sale.getPointRedeemed()).isEqualTo(35);
+        assertThat(sale.getPointDiscount()).isEqualByComparingTo("3.50");
+        assertThat(sale.getItems().get(0).getDiscountAmount())
+                .isEqualByComparingTo("0.00");
+        assertThat(sale.getItems().get(1).getDiscountAmount())
+                .isEqualByComparingTo("3.50");
+        verify(loyaltyService).redeemPoints(customer, sale, 35L);
+    }
+
+    @Test
+    void equalPercentBenefitsUseProductIdAscendingAsTieBreaker() {
+        Customer customer = Customer.builder().id(3L).pointBalance(30L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product higherId = product(2L, "Higher ID", "30.00", "10.00", 10);
+        Product lowerId = product(1L, "Lower ID", "30.00", "10.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(2L))
+                .thenReturn(Optional.of(higherId));
+        when(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(lowerId));
+
+        Sale sale = saleService.checkout(
+                request(3L, true, "57.00", item(2L, 1), item(1L, 1)),
+                ACTOR_ID
+        );
+
+        assertThat(sale.getItems().get(0).getDiscountAmount())
+                .isEqualByComparingTo("0.00");
+        assertThat(sale.getItems().get(1).getDiscountAmount())
+                .isEqualByComparingTo("3.00");
+        verify(loyaltyService).redeemPoints(customer, sale, 30L);
+    }
+
+    @Test
+    void neverPartiallyAppliesAnUnaffordablePhysicalUnitBenefit() {
+        Customer customer = Customer.builder().id(3L).pointBalance(24L).build();
+        LoyaltyConfig config = config(true, 30L);
+        Product coke = product(1L, "Coke", "25.00", "10.00", 10);
+        when(customerService.findActiveById(3L)).thenReturn(Optional.of(customer));
+        when(loyaltyService.getCurrentConfig()).thenReturn(config);
+        when(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(coke));
+
+        assertThatThrownBy(() -> saleService.checkout(
+                request(3L, true, "50.00", item(1L, 2)),
+                ACTOR_ID
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not have enough points");
 
         verify(loyaltyService, never()).redeemPoints(any(), any(), anyLong());
     }

@@ -96,16 +96,25 @@
                         <th>Line Net Total</th>
                         <th>Original Qty</th>
                         <th style="min-width: 130px;">Refund Qty</th>
-                        <th style="min-width: 180px;">Condition</th>
+                        <th style="min-width: 520px;">Return Breakdown</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="saleItem, row : ${sale.items}">
+                    <tr th:each="saleItem, row : ${sale.items}"
+                        th:with="uiData=${refundLineUiData.get(saleItem.id)},linePreview=${refundPreviewLines.get(saleItem.id)}"
+                        class="refund-item-row"
+                        th:attr="data-item-index=${row.index},
+                                 data-original-quantity=${uiData.originalQuantity},
+                                 data-discounted-units=${uiData.discountedUnitsOriginal},
+                                 data-unit-price=${uiData.unitPrice},
+                                 data-unit-discount=${uiData.unitDiscount},
+                                 data-net-total=${uiData.netTotal},
+                                 data-points-per-discounted-unit=${uiData.pointsPerDiscountedUnit}">
                         <td>
                             <input type="hidden"
                                    th:field="*{items[__${row.index}__].saleItemId}">
                             <input type="checkbox"
-                                   class="form-check-input"
+                                   class="form-check-input refund-item-selected"
                                    th:field="*{items[__${row.index}__].selected}"
                                    th:aria-label="${'Return ' + saleItem.productNameSnapshot}">
                         </td>
@@ -116,6 +125,10 @@
                                        + (saleItem.unitSnapshot != null ? ' / ' + saleItem.unitSnapshot : '')}">
                                 Size / Unit
                             </small>
+                            <small class="d-block text-muted">
+                                Original line total paid:
+                                &#3647;<span th:text="${#numbers.formatDecimal(saleItem.netTotal, 1, 2)}">0.00</span>
+                            </small>
                         </td>
                         <td>
                             &#3647;<span th:text="${#numbers.formatDecimal(saleItem.unitPrice, 1, 2)}">0.00</span>
@@ -123,6 +136,13 @@
                         <td>
                             <span th:if="${saleItem.discountAmount != null and saleItem.discountAmount.signum() > 0}">
                                 -&#3647;<span th:text="${#numbers.formatDecimal(saleItem.discountAmount, 1, 2)}">0.00</span>
+                                <small class="d-block text-success">
+                                    Loyalty
+                                    <span th:text="${saleItem.discountPercentSnapshot.stripTrailingZeros().toPlainString()}">10</span>%
+                                    applied to
+                                    <span th:text="${saleItem.discountedUnitCount}">2</span>
+                                    of <span th:text="${saleItem.quantity}">5</span> units
+                                </small>
                             </span>
                             <span th:unless="${saleItem.discountAmount != null and saleItem.discountAmount.signum() > 0}"
                                   class="text-muted">None</span>
@@ -135,19 +155,81 @@
                             <input type="number"
                                    min="1"
                                    th:max="${saleItem.quantity}"
-                                   class="form-control form-control-sm"
+                                   class="form-control form-control-sm refund-quantity"
                                    th:field="*{items[__${row.index}__].quantity}">
+                            <small class="d-block mt-2 text-muted line-refund-preview">
+                                Regular units: <span class="live-regular-units"
+                                                     th:text="${linePreview != null ? linePreview.regularUnitsReturned : 0}">0</span><br>
+                                Loyalty units: <span class="live-loyalty-units"
+                                                     th:text="${linePreview != null ? linePreview.discountedUnitsReturned : 0}">0</span><br>
+                                Cash: &#3647;<span class="live-cash-refund"
+                                                  th:text="${linePreview != null ? #numbers.formatDecimal(linePreview.refundAmount, 1, 2) : '0.00'}">0.00</span><br>
+                                Points restored: <span class="live-restored-points"
+                                                       th:text="${linePreview != null ? linePreview.restoredRedeemedPoints : 0}">0</span>
+                            </small>
                         </td>
                         <td>
-                            <select class="form-select form-select-sm"
-                                    th:field="*{items[__${row.index}__].condition}">
-                                <option value="">Choose condition</option>
-                                <option th:each="condition : ${returnConditions}"
-                                        th:value="${condition}"
-                                        th:text="${#strings.capitalize(#strings.toLowerCase(condition.name()))}">
-                                    Sellable
-                                </option>
-                            </select>
+                            <div class="return-breakdowns">
+                                <div class="return-breakdown-row border rounded p-2 mb-2"
+                                     th:each="breakdown, breakdownRow : ${refundRequest.items[row.index].breakdowns}"
+                                     th:attr="data-default-row=${refundRequest.items[row.index].breakdowns.size() == 1
+                                         and breakdown.reason == null and breakdown.condition == null}">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-2">
+                                            <label class="form-label small mb-1">Qty</label>
+                                            <input type="number"
+                                                   min="1"
+                                                   th:max="${saleItem.quantity}"
+                                                   class="form-control form-control-sm breakdown-quantity"
+                                                   th:field="*{items[__${row.index}__].breakdowns[__${breakdownRow.index}__].quantity}">
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label small mb-1">Return Reason</label>
+                                            <select class="form-select form-select-sm breakdown-reason"
+                                                    th:field="*{items[__${row.index}__].breakdowns[__${breakdownRow.index}__].reason}">
+                                                <option value="">Choose return reason</option>
+                                                <option th:each="reasonOption : ${refundReasons}"
+                                                        th:value="${reasonOption}"
+                                                        th:text="${#strings.capitalize(#strings.toLowerCase(
+                                                            #strings.replace(reasonOption.name(), '_', ' ')))}">
+                                                    Defective
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4 breakdown-condition-group d-none">
+                                            <label class="form-label small mb-1">Condition</label>
+                                            <select class="form-select form-select-sm breakdown-condition"
+                                                    th:field="*{items[__${row.index}__].breakdowns[__${breakdownRow.index}__].condition}">
+                                                <option value="">Choose condition</option>
+                                                <option th:each="condition : ${returnConditions}"
+                                                        th:value="${condition}"
+                                                        th:text="${#strings.capitalize(#strings.toLowerCase(condition.name()))}">
+                                                    Sellable
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-2 d-grid">
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm remove-breakdown"
+                                                    aria-label="Remove breakdown row">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm add-breakdown">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Add another reason
+                            </button>
+                            <div class="breakdown-assignment-guidance text-muted small mt-2 d-none"
+                                 aria-live="polite"></div>
+                            <div class="breakdown-validation text-danger small mt-2 d-none">
+                                Return breakdown quantities must equal Refund Qty before confirmation.
+                            </div>
+                            <small class="d-block mt-2 text-muted">
+                                If returned units have different reasons, split the refund quantity into separate rows.
+                            </small>
                         </td>
                     </tr>
                     </tbody>
@@ -160,23 +242,7 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="reason" class="form-label fw-semibold">Refund Reason</label>
-                            <select id="reason" class="form-select" th:field="*{reason}">
-                                <option value="">Choose a reason</option>
-                                <option th:each="reasonOption : ${refundReasons}"
-                                        th:value="${reasonOption}"
-                                        th:text="${#strings.capitalize(
-                                            #strings.toLowerCase(
-                                                #strings.replace(reasonOption.name(), '_', ' ')
-                                            )
-                                        )}">
-                                    Defective
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="note" class="form-label">Optional Note</label>
+                            <label for="note" class="form-label fw-semibold">Overall Refund Note (Optional)</label>
                             <textarea id="note"
                                       class="form-control"
                                       rows="3"
@@ -202,27 +268,31 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
                         <h5>Refund Preview</h5>
-                        <p class="text-muted small">
-                            This value is calculated by the server from historical SaleItem totals.
+                        <p class="text-muted small" id="previewVerificationText"
+                           th:text="${refundPreview != null
+                               ? 'Server-verified preview from historical SaleItem totals.'
+                               : 'Live browser estimate. Final values are recalculated by the server.'}">
+                            Live browser estimate. Final values are recalculated by the server.
                         </p>
 
-                        <div th:if="${refundPreview == null}" class="alert alert-light border">
-                            Select items, then calculate the refund before confirmation.
-                        </div>
-
-                        <div th:if="${refundPreview != null}" class="alert alert-success">
+                        <div class="alert" th:classappend="${refundPreview != null ? 'alert-success' : 'alert-light border'}">
                             <div class="small">Refund Amount</div>
                             <div class="fs-3 fw-bold">
-                                &#3647;<span th:text="${#numbers.formatDecimal(refundPreview, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                            &#3647;<span id="liveRefundTotal"
+                                         th:text="${refundPreview != null
+                                             ? #numbers.formatDecimal(refundPreview.totalRefundAmount, 1, 'COMMA', 2, 'POINT')
+                                             : '0.00'}">0.00</span>
+                            </div>
+                            <div class="small mt-2">
+                                Redeemed points restored:
+                                <strong><span id="liveRestoredPoints"
+                                              th:text="${refundPreview != null ? refundPreview.restoredRedeemedPoints : 0}">0</span> pts</strong>
                             </div>
                         </div>
 
                         <div class="mt-auto d-grid gap-2">
-                            <button type="submit" name="action" value="preview" class="btn btn-outline-primary">
-                                <i class="bi bi-calculator me-1"></i>
-                                Calculate Refund
-                            </button>
-                            <button type="submit" name="action" value="confirm" class="btn btn-danger">
+                            <button type="submit" name="action" value="confirm"
+                                    class="btn btn-danger confirm-refund">
                                 <i class="bi bi-check-circle me-1"></i>
                                 Confirm One-Time Refund
                             </button>
@@ -235,6 +305,303 @@
     </form>
 </main>
 
+<template id="returnBreakdownTemplate">
+    <div class="return-breakdown-row border rounded p-2 mb-2" data-default-row="false">
+        <div class="row g-2 align-items-end">
+            <div class="col-2">
+                <label class="form-label small mb-1">Qty</label>
+                <input type="number" min="1" class="form-control form-control-sm breakdown-quantity" value="1">
+            </div>
+            <div class="col">
+                <label class="form-label small mb-1">Return Reason</label>
+                <select class="form-select form-select-sm breakdown-reason">
+                    <option value="">Choose return reason</option>
+                    <option th:each="reasonOption : ${refundReasons}"
+                            th:value="${reasonOption}"
+                            th:text="${#strings.capitalize(#strings.toLowerCase(
+                                #strings.replace(reasonOption.name(), '_', ' ')))}">Defective</option>
+                </select>
+            </div>
+            <div class="col-4 breakdown-condition-group d-none">
+                <label class="form-label small mb-1">Condition</label>
+                <select class="form-select form-select-sm breakdown-condition">
+                    <option value="">Choose condition</option>
+                    <option th:each="condition : ${returnConditions}"
+                            th:value="${condition}"
+                            th:text="${#strings.capitalize(#strings.toLowerCase(condition.name()))}">Sellable</option>
+                </select>
+            </div>
+            <div class="col-2 d-grid">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-breakdown"
+                        aria-label="Remove breakdown row">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const returnConditions = {
+            EXPIRED: 'EXPIRED',
+            DEFECTIVE: 'DAMAGED',
+            WRONG_ITEM: 'SELLABLE',
+            CUSTOMER_CHANGED_MIND: 'SELLABLE'
+        };
+        const template = document.getElementById('returnBreakdownTemplate');
+        const itemRows = Array.from(document.querySelectorAll('.refund-item-row'));
+
+        const roundMoney = value => Math.round((value + Number.EPSILON) * 100) / 100;
+
+        function reindexBreakdowns(itemRow) {
+            const itemIndex = itemRow.dataset.itemIndex;
+            itemRow.querySelectorAll('.return-breakdown-row').forEach((row, index) => {
+                row.querySelector('.breakdown-quantity').name =
+                    `items[${itemIndex}].breakdowns[${index}].quantity`;
+                row.querySelector('.breakdown-reason').name =
+                    `items[${itemIndex}].breakdowns[${index}].reason`;
+                row.querySelector('.breakdown-condition').name =
+                    `items[${itemIndex}].breakdowns[${index}].condition`;
+            });
+        }
+
+        function updateRemoveButtons(itemRow) {
+            const buttons = itemRow.querySelectorAll('.remove-breakdown');
+            buttons.forEach(button => button.disabled = buttons.length === 1);
+        }
+
+        function getRefundQuantity(itemRow) {
+            return Number.parseInt(itemRow.querySelector('.refund-quantity').value, 10) || 0;
+        }
+
+        function getBreakdownTotal(itemRow, excludedInput = null) {
+            return Array.from(itemRow.querySelectorAll('.breakdown-quantity'))
+                .filter(input => input !== excludedInput)
+                .reduce((total, input) => total + (Number.parseInt(input.value, 10) || 0), 0);
+        }
+
+        function updateConfirmationState() {
+            const selectedRows = itemRows.filter(
+                row => row.querySelector('.refund-item-selected').checked
+            );
+            const hasInvalidBreakdown = selectedRows.some(
+                row => getBreakdownTotal(row) !== getRefundQuantity(row)
+            );
+            document.querySelector('.confirm-refund').disabled =
+                selectedRows.length === 0 || hasInvalidBreakdown;
+        }
+
+        function updateBreakdownState(itemRow, changedInput = null) {
+            const selected = itemRow.querySelector('.refund-item-selected').checked;
+            const refundQuantity = getRefundQuantity(itemRow);
+
+            if (changedInput) {
+                const remainingForInput = refundQuantity
+                    - getBreakdownTotal(itemRow, changedInput);
+                const maximum = Math.max(1, remainingForInput);
+                const current = Number.parseInt(changedInput.value, 10);
+                changedInput.max = String(maximum);
+                if (Number.isFinite(current) && current > maximum) {
+                    changedInput.value = String(maximum);
+                }
+            }
+
+            itemRow.querySelectorAll('.breakdown-quantity').forEach(input => {
+                const maximum = Math.max(
+                    1,
+                    refundQuantity - getBreakdownTotal(itemRow, input)
+                );
+                input.max = String(maximum);
+            });
+
+            const total = getBreakdownTotal(itemRow);
+            const invalid = selected && total !== refundQuantity;
+            const breakdownContainer = itemRow.querySelector('.return-breakdowns');
+            breakdownContainer.classList.toggle('border', invalid);
+            breakdownContainer.classList.toggle('border-danger', invalid);
+            breakdownContainer.classList.toggle('rounded', invalid);
+            breakdownContainer.classList.toggle('p-1', invalid);
+            itemRow.querySelector('.breakdown-validation').classList.toggle('d-none', !invalid);
+
+            const remaining = refundQuantity - total;
+            itemRow.querySelector('.add-breakdown').disabled = !selected || remaining < 1;
+            const guidance = itemRow.querySelector('.breakdown-assignment-guidance');
+            if (selected && remaining === 0) {
+                const units = refundQuantity === 1 ? 'unit has' : 'units have';
+                guidance.textContent = `All ${refundQuantity} returned ${units} been assigned. `
+                    + 'Reduce a row quantity to add another reason.';
+                guidance.classList.remove('d-none');
+            } else if (selected && remaining > 0) {
+                const units = remaining === 1 ? 'unit is' : 'units are';
+                guidance.textContent = `${remaining} returned ${units} still unassigned.`;
+                guidance.classList.remove('d-none');
+            } else {
+                guidance.classList.add('d-none');
+            }
+            updateRemoveButtons(itemRow);
+            updateConfirmationState();
+        }
+
+        function configureBreakdownRow(breakdownRow, itemRow) {
+            const reason = breakdownRow.querySelector('.breakdown-reason');
+            const condition = breakdownRow.querySelector('.breakdown-condition');
+            const conditionGroup = breakdownRow.querySelector('.breakdown-condition-group');
+            const quantity = breakdownRow.querySelector('.breakdown-quantity');
+
+            const updateCondition = resetOther => {
+                const isOther = reason.value === 'OTHER';
+                conditionGroup.classList.toggle('d-none', !isOther);
+                condition.required = isOther
+                    && itemRow.querySelector('.refund-item-selected').checked;
+                if (isOther && resetOther) {
+                    condition.value = '';
+                } else if (!isOther) {
+                    condition.value = returnConditions[reason.value] || '';
+                }
+            };
+
+            reason.addEventListener('change', () => {
+                updateCondition(true);
+                breakdownRow.dataset.defaultRow = 'false';
+            });
+            condition.addEventListener('change', () => {
+                breakdownRow.dataset.defaultRow = 'false';
+            });
+            quantity.addEventListener('input', () => {
+                breakdownRow.dataset.defaultRow = 'false';
+                updateBreakdownState(itemRow, quantity);
+            });
+            quantity.addEventListener('change', () => updateBreakdownState(itemRow, quantity));
+            breakdownRow.querySelector('.remove-breakdown').addEventListener('click', () => {
+                breakdownRow.remove();
+                reindexBreakdowns(itemRow);
+                updateBreakdownState(itemRow);
+            });
+            updateCondition(false);
+        }
+
+        function toggleBreakdownInputs(itemRow) {
+            const selected = itemRow.querySelector('.refund-item-selected').checked;
+            itemRow.querySelectorAll('.return-breakdown-row input, .return-breakdown-row select')
+                .forEach(control => control.disabled = !selected);
+            itemRow.querySelectorAll('.breakdown-reason')
+                .forEach(control => control.required = selected);
+            itemRow.querySelectorAll('.breakdown-condition')
+                .forEach(control => control.required = selected
+                    && control.closest('.return-breakdown-row')
+                        .querySelector('.breakdown-reason').value === 'OTHER');
+        }
+
+        function calculateLinePreview(itemRow) {
+            const quantityInput = itemRow.querySelector('.refund-quantity');
+            const requested = Number.parseInt(quantityInput.value, 10);
+            const originalQuantity = Number.parseInt(itemRow.dataset.originalQuantity, 10);
+            const discountedUnits = Number.parseInt(itemRow.dataset.discountedUnits, 10);
+            const regularUnits = originalQuantity - discountedUnits;
+            const refundQuantity = Number.isFinite(requested)
+                ? Math.max(0, Math.min(requested, originalQuantity))
+                : 0;
+            const regularReturned = Math.min(refundQuantity, regularUnits);
+            const discountedReturned = Math.min(
+                discountedUnits,
+                Math.max(0, refundQuantity - regularUnits)
+            );
+            const unitPrice = Number(itemRow.dataset.unitPrice);
+            const unitDiscount = Number(itemRow.dataset.unitDiscount);
+            const netTotal = Number(itemRow.dataset.netTotal);
+            let cashRefund;
+
+            if (refundQuantity === originalQuantity) {
+                cashRefund = netTotal;
+            } else if (discountedUnits === 0) {
+                cashRefund = netTotal * refundQuantity / originalQuantity;
+            } else {
+                cashRefund = unitPrice * regularReturned
+                    + (unitPrice - unitDiscount) * discountedReturned;
+            }
+            cashRefund = roundMoney(cashRefund || 0);
+            const restoredPoints = discountedReturned
+                * Number(itemRow.dataset.pointsPerDiscountedUnit);
+
+            itemRow.querySelector('.live-regular-units').textContent = regularReturned;
+            itemRow.querySelector('.live-loyalty-units').textContent = discountedReturned;
+            itemRow.querySelector('.live-cash-refund').textContent = cashRefund.toFixed(2);
+            itemRow.querySelector('.live-restored-points').textContent = restoredPoints;
+            itemRow.dataset.liveCashRefund = cashRefund.toFixed(2);
+            itemRow.dataset.liveRestoredPoints = String(restoredPoints);
+        }
+
+        function updateOverallPreview(markAsBrowserEstimate = true) {
+            let total = 0;
+            let points = 0;
+            itemRows.forEach(itemRow => {
+                if (itemRow.querySelector('.refund-item-selected').checked) {
+                    total += Number(itemRow.dataset.liveCashRefund || 0);
+                    points += Number(itemRow.dataset.liveRestoredPoints || 0);
+                }
+            });
+            document.getElementById('liveRefundTotal').textContent = roundMoney(total).toFixed(2);
+            document.getElementById('liveRestoredPoints').textContent = String(points);
+            if (markAsBrowserEstimate) {
+                document.getElementById('previewVerificationText').textContent =
+                    'Live browser estimate. Final values are recalculated by the server.';
+            }
+        }
+
+        itemRows.forEach(itemRow => {
+            itemRow.querySelectorAll('.return-breakdown-row')
+                .forEach(row => configureBreakdownRow(row, itemRow));
+            reindexBreakdowns(itemRow);
+            toggleBreakdownInputs(itemRow);
+            calculateLinePreview(itemRow);
+            updateBreakdownState(itemRow);
+
+            const quantityInput = itemRow.querySelector('.refund-quantity');
+            const refreshQuantity = () => {
+                const breakdownRows = itemRow.querySelectorAll('.return-breakdown-row');
+                if (breakdownRows.length === 1
+                        && breakdownRows[0].dataset.defaultRow === 'true') {
+                    breakdownRows[0].querySelector('.breakdown-quantity').value = quantityInput.value;
+                }
+                updateBreakdownState(itemRow);
+                calculateLinePreview(itemRow);
+                updateOverallPreview();
+            };
+            quantityInput.addEventListener('input', refreshQuantity);
+            quantityInput.addEventListener('change', refreshQuantity);
+
+            itemRow.querySelector('.refund-item-selected').addEventListener('change', () => {
+                if (!itemRow.querySelector('.return-breakdown-row')) {
+                    const newRow = template.content.firstElementChild.cloneNode(true);
+                    newRow.dataset.defaultRow = 'true';
+                    newRow.querySelector('.breakdown-quantity').value = quantityInput.value;
+                    itemRow.querySelector('.return-breakdowns').appendChild(newRow);
+                    configureBreakdownRow(newRow, itemRow);
+                    reindexBreakdowns(itemRow);
+                }
+                toggleBreakdownInputs(itemRow);
+                updateBreakdownState(itemRow);
+                updateOverallPreview();
+            });
+
+            itemRow.querySelector('.add-breakdown').addEventListener('click', () => {
+                const remaining = getRefundQuantity(itemRow) - getBreakdownTotal(itemRow);
+                if (remaining < 1) {
+                    return;
+                }
+                const newRow = template.content.firstElementChild.cloneNode(true);
+                newRow.querySelector('.breakdown-quantity').value = '1';
+                itemRow.querySelector('.return-breakdowns').appendChild(newRow);
+                configureBreakdownRow(newRow, itemRow);
+                reindexBreakdowns(itemRow);
+                updateBreakdownState(itemRow);
+            });
+        });
+
+        updateOverallPreview(false);
+    });
+</script>
 </body>
 </html>

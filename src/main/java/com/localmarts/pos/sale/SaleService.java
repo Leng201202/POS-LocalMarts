@@ -27,6 +27,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,8 +118,7 @@ public class SaleService {
                 .build();
 
         BigDecimal subtotal = ZERO_MONEY;
-        BigDecimal pointDiscount = ZERO_MONEY;
-        long totalRequiredPoints = 0L;
+        List<LoyaltyBenefitCandidate> loyaltyCandidates = new ArrayList<>();
 
         for (Map.Entry<Long, Integer> entry : requestedQuantities.entrySet()) {
             Product product = productRepository
@@ -139,26 +140,14 @@ public class SaleService {
             subtotal = subtotal.add(item.getGrossSubtotal());
 
             if (request.isUseLoyaltyDiscount()) {
-                LoyaltyLineDiscount loyaltyLineDiscount =
-                        calculateLoyaltyLineDiscount(item, loyaltyConfig);
-                item.setDiscountAmount(loyaltyLineDiscount.discountAmount());
-                item.setNetTotal(money(
-                        item.getGrossSubtotal().subtract(
-                                loyaltyLineDiscount.discountAmount()
-                        )
-                ));
-                pointDiscount = pointDiscount.add(
-                        loyaltyLineDiscount.discountAmount()
-                );
-                try {
-                    totalRequiredPoints = Math.addExact(
-                            totalRequiredPoints,
-                            loyaltyLineDiscount.requiredPoints()
-                    );
-                } catch (ArithmeticException exception) {
-                    throw new IllegalArgumentException(
-                            "Required loyalty points exceed the supported limit"
-                    );
+                LoyaltyBenefitCandidate candidate =
+                        calculateLoyaltyBenefitCandidate(
+                                item,
+                                product.getId(),
+                                loyaltyConfig
+                        );
+                if (candidate.requiredPointsPerUnit() > 0) {
+                    loyaltyCandidates.add(candidate);
                 }
             }
 
@@ -170,16 +159,16 @@ public class SaleService {
             );
         }
 
+        LoyaltyAllocation loyaltyAllocation = LoyaltyAllocation.none();
         if (request.isUseLoyaltyDiscount()) {
-            validateLoyaltyRedemption(
+            loyaltyAllocation = allocateAffordableLoyaltyBenefits(
                     customer,
                     loyaltyConfig,
-                    totalRequiredPoints,
-                    pointDiscount
+                    loyaltyCandidates
             );
         }
 
-        BigDecimal totalDiscount = money(pointDiscount);
+        BigDecimal totalDiscount = loyaltyAllocation.discountAmount();
         BigDecimal totalAmount = money(subtotal.subtract(totalDiscount));
         BigDecimal paidAmount = validatePaidAmount(
                 request.getPaidAmount()
@@ -199,7 +188,7 @@ public class SaleService {
         sale.setSubtotal(money(subtotal));
         sale.setTotalDiscount(totalDiscount);
         sale.setPointDiscount(totalDiscount);
-        sale.setPointRedeemed(toPointInteger(totalRequiredPoints));
+        sale.setPointRedeemed(toPointInteger(loyaltyAllocation.requiredPoints()));
         sale.setTotalAmount(totalAmount);
         sale.setPaidAmount(paidAmount);
         sale.setChangeAmount(changeAmount);
@@ -212,7 +201,7 @@ public class SaleService {
                 loyaltyService.redeemPoints(
                         customer,
                         savedSale,
-                        totalRequiredPoints
+                        loyaltyAllocation.requiredPoints()
                 );
             }
 
@@ -433,8 +422,9 @@ public class SaleService {
                 .build();
     }
 
-    private LoyaltyLineDiscount calculateLoyaltyLineDiscount(
+    private LoyaltyBenefitCandidate calculateLoyaltyBenefitCandidate(
             SaleItem item,
+            Long productId,
             LoyaltyConfig config
     ) {
         if (config == null) {
@@ -446,21 +436,31 @@ public class SaleService {
         BigDecimal discountPercent = item.getDiscountPercentSnapshot();
         if (discountPercent == null
                 || discountPercent.compareTo(BigDecimal.ZERO) <= 0) {
-            return new LoyaltyLineDiscount(ZERO_MONEY, 0L);
+            return new LoyaltyBenefitCandidate(
+                    item,
+                    productId,
+                    ZERO_MONEY,
+                    0L
+            );
         }
 
         validateRedemptionConversion(config);
 
-        BigDecimal discountAmount = item.getGrossSubtotal()
+        BigDecimal unitDiscount = item.getUnitPrice()
                 .multiply(discountPercent)
                 .divide(ONE_HUNDRED, 2, RoundingMode.HALF_UP);
-        if (discountAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return new LoyaltyLineDiscount(ZERO_MONEY, 0L);
+        if (unitDiscount.compareTo(BigDecimal.ZERO) <= 0) {
+            return new LoyaltyBenefitCandidate(
+                    item,
+                    productId,
+                    ZERO_MONEY,
+                    0L
+            );
         }
 
-        long requiredPoints;
+        long requiredPointsPerUnit;
         try {
-            requiredPoints = discountAmount
+            requiredPointsPerUnit = unitDiscount
                     .multiply(BigDecimal.valueOf(config.getRedeemPoints()))
                     .divide(config.getRedeemValue(), 0, RoundingMode.CEILING)
                     .longValueExact();
@@ -470,14 +470,18 @@ public class SaleService {
             );
         }
 
-        return new LoyaltyLineDiscount(money(discountAmount), requiredPoints);
+        return new LoyaltyBenefitCandidate(
+                item,
+                productId,
+                money(unitDiscount),
+                requiredPointsPerUnit
+        );
     }
 
-    private void validateLoyaltyRedemption(
+    private LoyaltyAllocation allocateAffordableLoyaltyBenefits(
             Customer customer,
             LoyaltyConfig config,
-            long totalRequiredPoints,
-            BigDecimal pointDiscount
+            List<LoyaltyBenefitCandidate> candidates
     ) {
         if (customer == null) {
             throw new IllegalArgumentException(
@@ -490,8 +494,7 @@ public class SaleService {
             );
         }
         validateRedemptionConversion(config);
-        if (totalRequiredPoints <= 0
-                || pointDiscount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (candidates.isEmpty()) {
             throw new IllegalArgumentException(
                     "The cart has no products eligible for a loyalty discount"
             );
@@ -502,22 +505,101 @@ public class SaleService {
                     "Minimum loyalty points per sale must be greater than zero"
             );
         }
-        if (totalRequiredPoints < config.getMinimumRedeemPoints()) {
+
+        List<LoyaltyBenefitCandidate> orderedCandidates = candidates.stream()
+                .sorted(Comparator
+                        .comparing(
+                                (LoyaltyBenefitCandidate candidate) ->
+                                        candidate.item().getDiscountPercentSnapshot(),
+                                Comparator.reverseOrder()
+                        )
+                        .thenComparing(LoyaltyBenefitCandidate::productId))
+                .toList();
+
+        long remainingPoints = customer.getPointBalance() == null
+                ? 0L
+                : Math.max(0L, customer.getPointBalance());
+        long selectedPoints = 0L;
+        BigDecimal selectedDiscount = ZERO_MONEY;
+        List<SelectedLoyaltyBenefit> selectedBenefits = new ArrayList<>();
+
+        for (LoyaltyBenefitCandidate candidate : orderedCandidates) {
+            long affordableUnitCount = Math.min(
+                    candidate.item().getQuantity().longValue(),
+                    remainingPoints / candidate.requiredPointsPerUnit()
+            );
+            if (affordableUnitCount <= 0) {
+                continue;
+            }
+
+            long candidatePoints;
+            try {
+                candidatePoints = Math.multiplyExact(
+                        candidate.requiredPointsPerUnit(),
+                        affordableUnitCount
+                );
+                selectedPoints = Math.addExact(
+                        selectedPoints,
+                        candidatePoints
+                );
+            } catch (ArithmeticException exception) {
+                throw new IllegalArgumentException(
+                        "Required loyalty points exceed the supported limit"
+                );
+            }
+
+            int discountedUnitCount = Math.toIntExact(affordableUnitCount);
+            selectedBenefits.add(new SelectedLoyaltyBenefit(
+                    candidate,
+                    discountedUnitCount
+            ));
+            remainingPoints -= candidatePoints;
+            selectedDiscount = selectedDiscount.add(
+                    candidate.unitDiscount().multiply(
+                            BigDecimal.valueOf(discountedUnitCount)
+                    )
+            );
+        }
+
+        if (selectedPoints == 0L) {
             throw new IllegalArgumentException(
-                    "This cart requires " + totalRequiredPoints
-                            + " points, below the minimum of "
+                    "The member does not have enough points for an eligible loyalty benefit"
+            );
+        }
+        if (selectedPoints < config.getMinimumRedeemPoints()) {
+            throw new IllegalArgumentException(
+                    "Available loyalty benefits use only " + selectedPoints
+                            + " points, below the minimum redemption of "
                             + config.getMinimumRedeemPoints()
             );
         }
-        long pointBalance = customer.getPointBalance() == null
-                ? 0L
-                : customer.getPointBalance();
-        if (pointBalance < totalRequiredPoints) {
-            throw new IllegalArgumentException(
-                    "The member needs " + totalRequiredPoints
-                            + " points to use the complete loyalty discount"
+
+        for (SelectedLoyaltyBenefit selectedBenefit : selectedBenefits) {
+            LoyaltyBenefitCandidate candidate = selectedBenefit.candidate();
+            SaleItem item = candidate.item();
+            BigDecimal lineDiscount = money(
+                    candidate.unitDiscount().multiply(
+                            BigDecimal.valueOf(
+                                    selectedBenefit.discountedUnitCount()
+                            )
+                    )
             );
+            item.setDiscountAmount(lineDiscount);
+            item.setNetTotal(money(
+                    item.getGrossSubtotal().subtract(lineDiscount)
+            ));
+            if (!Integer.valueOf(selectedBenefit.discountedUnitCount())
+                    .equals(item.getDiscountedUnitCount())) {
+                throw new IllegalStateException(
+                        "Unable to reconstruct the discounted unit quantity"
+                );
+            }
         }
+
+        return new LoyaltyAllocation(
+                money(selectedDiscount),
+                selectedPoints
+        );
     }
 
     private void validateRedemptionConversion(LoyaltyConfig config) {
@@ -617,9 +699,26 @@ public class SaleService {
         return note.trim();
     }
 
-    private record LoyaltyLineDiscount(
+    private record LoyaltyBenefitCandidate(
+            SaleItem item,
+            Long productId,
+            BigDecimal unitDiscount,
+            long requiredPointsPerUnit
+    ) {
+    }
+
+    private record SelectedLoyaltyBenefit(
+            LoyaltyBenefitCandidate candidate,
+            int discountedUnitCount
+    ) {
+    }
+
+    private record LoyaltyAllocation(
             BigDecimal discountAmount,
             long requiredPoints
     ) {
+        private static LoyaltyAllocation none() {
+            return new LoyaltyAllocation(ZERO_MONEY, 0L);
+        }
     }
 }

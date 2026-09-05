@@ -45,22 +45,30 @@
                     <strong th:text="${refundSaleStatus}">PARTIALLY_REFUNDED</strong>
                 </div>
                 <div class="d-flex justify-content-between border-top pt-3 mt-3">
-                    <span class="fw-semibold">Refund Amount</span>
+                    <span class="fw-semibold">Money Returned</span>
                     <strong class="fs-4">
                         &#3647;<span th:text="${#numbers.formatDecimal(refundTotal, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                     </strong>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <span class="text-muted">Redeemed Points Restored</span>
+                    <strong><span th:text="${restoredRedeemedPoints}">0</span> pts</strong>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span class="text-muted">Earned Points Reversed</span>
+                    <strong><span th:text="${reversedEarnedPoints}">0</span> pts</strong>
                 </div>
             </div>
 
             <div th:if="${refundPaymentMethod != null and refundPaymentMethod.name() == 'CASH'}"
                  class="alert alert-warning text-start">
-                The POS recorded a CASH refund. The cashier must physically return the displayed amount.
+                Cashier must physically return
+                &#3647;<span th:text="${#numbers.formatDecimal(refundTotal, 1, 'COMMA', 2, 'POINT')}">0.00</span>.
             </div>
 
             <div th:if="${refundPaymentMethod != null and refundPaymentMethod.name() != 'CASH'}"
                  class="alert alert-warning text-start">
-                This refund was recorded inside the POS only. The application did not perform a bank,
-                card, or QR reversal.
+                Refund recorded in POS only; external payment reversal must be handled separately.
             </div>
 
             <div class="d-flex flex-wrap justify-content-center gap-2">

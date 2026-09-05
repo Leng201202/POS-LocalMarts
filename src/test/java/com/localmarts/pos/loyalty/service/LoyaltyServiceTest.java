@@ -52,6 +52,7 @@ class LoyaltyServiceTest {
         Sale sale = sale(20);
         Customer customer = customer(40);
         LoyaltyConfig historicalConfig = config("100.00", "10.00", 1L);
+        mockPointMovement(customer, -20L, 20L);
         when(loyaltyConfigService.getSaleConfig(sale.getTimestamp()))
                 .thenReturn(historicalConfig);
 
@@ -73,6 +74,7 @@ class LoyaltyServiceTest {
     void partialRefundAboveMinimumReversesOnlyExcessPoints() {
         Sale sale = sale(20);
         Customer customer = customer(25);
+        mockPointMovement(customer, -5L, 20L);
         when(loyaltyConfigService.getSaleConfig(sale.getTimestamp()))
                 .thenReturn(config("100.00", "10.00", 1L));
 
@@ -93,6 +95,7 @@ class LoyaltyServiceTest {
     void partialRefundBelowHistoricalMinimumReversesAllEarnedPoints() {
         Sale sale = sale(11);
         Customer customer = customer(30);
+        mockPointMovement(customer, -11L, 19L);
         when(loyaltyConfigService.getSaleConfig(sale.getTimestamp()))
                 .thenReturn(config("100.00", "10.00", 1L));
 
@@ -112,6 +115,7 @@ class LoyaltyServiceTest {
     void refundUsesHistoricalConfigInsteadOfCurrentActiveConfig() {
         Sale sale = sale(20);
         Customer customer = customer(20);
+        mockPointMovement(customer, -5L, 15L);
         LoyaltyConfig historicalConfig = config("100.00", "10.00", 1L);
         when(loyaltyConfigService.getSaleConfig(sale.getTimestamp()))
                 .thenReturn(historicalConfig);
@@ -133,6 +137,7 @@ class LoyaltyServiceTest {
     void reversalAllowsCustomerBalanceToBecomeNegative() {
         Sale sale = sale(11);
         Customer customer = customer(3);
+        mockPointMovement(customer, -8L, -5L);
         when(loyaltyConfigService.getSaleConfig(sale.getTimestamp()))
                 .thenReturn(config("0.00", "10.00", 1L));
 
@@ -228,6 +233,55 @@ class LoyaltyServiceTest {
         );
     }
 
+    @Test
+    void refundRestorationAtomicallyAddsPointsAndRecordsContinuousBalance() {
+        Sale sale = sale(0);
+        Customer customer = customer(-10L);
+        mockPointMovement(customer, 25L, 15L);
+
+        LoyaltyService.LoyaltyRestoreImpact impact =
+                loyaltyService.restoreRedeemedPointsForRefund(
+                        customer,
+                        sale,
+                        25L
+                );
+
+        assertThat(impact.restoredPoints()).isEqualTo(25L);
+        assertThat(impact.beforeBalance()).isEqualTo(-10L);
+        assertThat(impact.afterBalance()).isEqualTo(15L);
+        assertThat(customer.getPointBalance()).isEqualTo(15L);
+
+        ArgumentCaptor<LoyaltyTransaction> captor =
+                ArgumentCaptor.forClass(LoyaltyTransaction.class);
+        verify(loyaltyTransactionRepository).save(captor.capture());
+        assertThat(captor.getValue().getType())
+                .isEqualTo(TransactionType.REFUND_REDEEM_RESTORE);
+        assertThat(captor.getValue().getPoints()).isEqualTo(25L);
+        assertThat(captor.getValue().getBeforePoint()).isEqualTo(-10L);
+        assertThat(captor.getValue().getAfterPoint()).isEqualTo(15L);
+    }
+
+    @Test
+    void zeroPointRestorationIsANoOp() {
+        Sale sale = sale(0);
+        Customer customer = customer(7L);
+
+        LoyaltyService.LoyaltyRestoreImpact impact =
+                loyaltyService.restoreRedeemedPointsForRefund(
+                        customer,
+                        sale,
+                        0L
+                );
+
+        assertThat(impact.restoredPoints()).isZero();
+        assertThat(impact.beforeBalance()).isEqualTo(7L);
+        assertThat(impact.afterBalance()).isEqualTo(7L);
+        verify(customerRepository, never()).applyPointMovement(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong()
+        );
+    }
+
     private void assertReversalTransaction(
             Customer customer,
             Sale sale,
@@ -261,6 +315,17 @@ class LoyaltyServiceTest {
                 .id(2L)
                 .pointBalance(pointBalance)
                 .build();
+    }
+
+    private void mockPointMovement(
+            Customer customer,
+            long change,
+            long resultingBalance
+    ) {
+        when(customerRepository.applyPointMovement(customer.getId(), change))
+                .thenReturn(1);
+        when(customerRepository.findPointBalanceValueById(customer.getId()))
+                .thenReturn(java.util.Optional.of(resultingBalance));
     }
 
     private LoyaltyConfig config(
