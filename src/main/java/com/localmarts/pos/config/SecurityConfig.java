@@ -20,19 +20,22 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/pos/scanner", "/pos/scanner/**").hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers(
                                 "/admin", "/admin/**",
                                 "/users", "/users/**",
                                 "/products", "/products/**",
                                 "/unit", "/unit/**",
                                 "/category", "/category/**",
-                                "/inventory", "/inventory/**",
                                 "/audit", "/audit/**",
-                                "/customer", "/customer/**",
+                                "/users","/users/**",
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
-                        .requestMatchers("/cashier", "/cashier/**").hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(
+                                "/inventory", "/inventory/**",
+                                "/customer", "/customer/**",
+                                "/pos/scanner", "/pos/scanner/**",
+                                "/cashier", "/cashier/**"
+                        ).hasAnyRole("ADMIN", "CASHIER")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

@@ -81,7 +81,7 @@
                         <td>
                             <span class="badge text-bg-primary" th:text="${user.role}">ADMIN</span>
                         </td>
-                        <td th:text="${#temporals.format(user.created_at, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</td>
+                        <td th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</td>
                         <td>
                             <span th:if="${user.active}" class="badge text-bg-success">Active</span>
                             <span th:if="${!user.active}" class="badge text-bg-danger">Inactive</span>
