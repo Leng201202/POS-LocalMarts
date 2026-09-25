@@ -10,6 +10,8 @@ import com.localmarts.pos.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -26,7 +28,41 @@ public class InventoryService {
     }
 
     public List<Inventory> filter(String keyword, InventoryType type,Long actorId){
-        return inventoryRepository.filter(keyword,type,actorId);
+        return inventoryRepository.filter(
+                keyword,
+                type,
+                actorId,
+                Pageable.unpaged()
+        ).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Inventory> filter(
+            String keyword,
+            InventoryType type,
+            Long actorId,
+            Pageable pageable
+    ) {
+        return inventoryRepository.filter(normalize(keyword), type, actorId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public long countFilteredByType(
+            String keyword,
+            InventoryType selectedType,
+            Long actorId,
+            InventoryType countedType
+    ) {
+        return inventoryRepository.countFilteredByType(
+                normalize(keyword),
+                selectedType,
+                actorId,
+                countedType
+        );
+    }
+
+    private String normalize(String keyword) {
+        return keyword == null || keyword.isBlank() ? null : keyword.trim();
     }
 
     @Transactional

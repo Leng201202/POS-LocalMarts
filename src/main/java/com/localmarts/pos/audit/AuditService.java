@@ -5,6 +5,8 @@ import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.entity.AuditDetails;
 import com.localmarts.pos.audit.utils.AuditStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -17,6 +19,10 @@ public class AuditService {
     }
     public List<Audit> findAll(){
         return repository.findAllByOrderByTimestampDesc();
+    }
+
+    public Page<Audit> findAll(Pageable pageable) {
+        return repository.findAllByOrderByTimestampDescIdDesc(pageable);
     }
 
     public Audit logSuccess(

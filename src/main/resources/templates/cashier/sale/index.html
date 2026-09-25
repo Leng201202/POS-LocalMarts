@@ -61,7 +61,7 @@
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
             <h5 class="mb-0">Your Sales</h5>
             <span class="badge bg-primary rounded-pill"
-                  th:text="${#lists.size(sales)} + ' sales'">
+                  th:text="${page.totalElements} + ' sales'">
                 0 sales
             </span>
         </div>
@@ -175,6 +175,27 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div th:if="${page.totalPages > 1}"
+                 class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <small class="text-muted"
+                       th:text="'Showing ' + ${page.number * page.size + 1} + '–' + ${page.number * page.size + page.numberOfElements} + ' of ' + ${page.totalElements}">
+                    Showing sales
+                </small>
+                <nav aria-label="Sales history pages">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/cashier/sales(page=${page.number - 1})}">Previous</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link" th:text="'Page ' + ${page.number + 1} + ' of ' + ${page.totalPages}">Page</span>
+                        </li>
+                        <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/cashier/sales(page=${page.number + 1})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

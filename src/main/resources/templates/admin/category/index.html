@@ -91,7 +91,7 @@
                                 Inactive
                             </span>
                         </td>
-                        <td th:text="${#temporals.format(category.created_at,'dd MMM yyyy HH:mm')}"></td>
+                        <td th:text="${#temporals.format(category.createdAt,'dd MMM yyyy HH:mm')}"></td>
                         <td class="text-end">
                             <a th:href="@{/category/edit/{id}(id=${category.id})}"
                                class="btn btn-sm btn-outline-primary">

@@ -12,6 +12,8 @@ import com.localmarts.pos.sale.entity.PaymentMethod;
 import com.localmarts.pos.sale.entity.Sale;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -36,6 +38,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/cashier")
 @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
 public class SaleController {
+
+    private static final int PAGE_SIZE = 20;
 
     private final SaleService saleService;
     private final RefundService refundService;
@@ -170,24 +174,31 @@ public class SaleController {
             LocalDate dateTo,
             @RequestParam(required = false) BigDecimal totalAmount,
             @RequestParam(required = false) PaymentMethod paymentMethod,
+            @RequestParam(defaultValue = "0") int page,
             Authentication authentication,
             Model model) {
 
         currentUserService.getCurrentUserId(authentication);
 
         try {
-            List<Sale> sales = refundService.searchEligibleSales(
+            Page<Sale> salesPage = refundService.searchEligibleSales(
                     invoiceNo,
                     customerPhone,
                     dateFrom,
                     dateTo,
                     totalAmount,
-                    paymentMethod
+                    paymentMethod,
+                    PageRequest.of(Math.max(page, 0), PAGE_SIZE)
             );
-            model.addAttribute("sales", sales);
+            model.addAttribute("sales", salesPage.getContent());
+            model.addAttribute("page", salesPage);
         } catch (IllegalArgumentException exception) {
             model.addAttribute("error", exception.getMessage());
             model.addAttribute("sales", List.of());
+            model.addAttribute(
+                    "page",
+                    Page.empty(PageRequest.of(Math.max(page, 0), PAGE_SIZE))
+            );
         }
 
         model.addAttribute("invoiceNo", invoiceNo);
@@ -342,14 +353,20 @@ public class SaleController {
 
     @GetMapping("/sales")
     public String salesHistory(
+            @RequestParam(defaultValue = "0") int page,
             Authentication authentication,
             Model model) {
 
         Long cashierId =
                 currentUserService.getCurrentUserId(authentication);
 
-        List<Sale> sales = saleService.getSalesHistory(cashierId);
+        Page<Sale> salesPage = saleService.getSalesHistory(
+                cashierId,
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE)
+        );
+        List<Sale> sales = salesPage.getContent();
         model.addAttribute("sales", sales);
+        model.addAttribute("page", salesPage);
         model.addAttribute(
                 "refundableSaleIds",
                 refundService.refundableSaleIds(sales)

@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,6 +34,7 @@ import java.util.Set;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -133,13 +137,20 @@ class SaleControllerRefundPhase3ViewTest {
     void redeemedSaleReceivesRefundActionInSalesHistory() throws Exception {
         Sale sale = redeemedSale(PaymentMethod.CARD);
         when(currentUserService.getCurrentUserId(any())).thenReturn(7L);
-        when(saleService.getSalesHistory(7L)).thenReturn(List.of(sale));
+        when(saleService.getSalesHistory(eq(7L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(sale),
+                        PageRequest.of(0, 20),
+                        21
+                ));
         when(refundService.refundableSaleIds(List.of(sale))).thenReturn(Set.of(1L));
         when(refundService.expiredRefundSaleIds(List.of(sale))).thenReturn(Set.of());
 
         mockMvc.perform(get("/cashier/sales"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("/cashier/sales/1/refund")))
+                .andExpect(content().string(containsString("/cashier/sales?page=1")))
+                .andExpect(content().string(containsString("Page 1 of 2")))
                 .andExpect(content().string(containsString("Refund")));
     }
 

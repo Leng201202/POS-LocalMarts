@@ -121,7 +121,7 @@
             <h5 class="mb-0">
                 Eligible Sales
                 <span class="badge bg-primary rounded-pill ms-1"
-                      th:text="${#lists.size(sales)}">0</span>
+                      th:text="${page.totalElements}">0</span>
             </h5>
         </div>
         <div class="card-body">
@@ -168,6 +168,26 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+            <div th:if="${page.totalPages > 1}"
+                 class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <small class="text-muted"
+                       th:text="'Showing ' + ${page.number * page.size + 1} + '–' + ${page.number * page.size + page.numberOfElements} + ' of ' + ${page.totalElements}">
+                    Showing eligible sales
+                </small>
+                <nav aria-label="Refund search result pages">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/cashier/refunds(page=${page.number - 1},invoiceNo=${invoiceNo},customerPhone=${customerPhone},dateFrom=${dateFrom},dateTo=${dateTo},totalAmount=${totalAmount},paymentMethod=${selectedPaymentMethod})}">Previous</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link" th:text="'Page ' + ${page.number + 1} + ' of ' + ${page.totalPages}">Page</span>
+                        </li>
+                        <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/cashier/refunds(page=${page.number + 1},invoiceNo=${invoiceNo},customerPhone=${customerPhone},dateFrom=${dateFrom},dateTo=${dateTo},totalAmount=${totalAmount},paymentMethod=${selectedPaymentMethod})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
@@ -51,6 +53,28 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     @EntityGraph(attributePaths = {"customer", "items"})
     List<Sale> findByCashierIdOrderByTimestampDesc(Long cashierId);
+
+    @Query(
+            value = """
+                    select s.id
+                    from Sale s
+                    where s.cashier.id = :cashierId
+                    order by s.timestamp desc, s.id desc
+                    """,
+            countQuery = """
+                    select count(s)
+                    from Sale s
+                    where s.cashier.id = :cashierId
+                    """
+    )
+    Page<Long> findHistoryIdsByCashierId(
+            @Param("cashierId") Long cashierId,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"customer", "items"})
+    @Query("select distinct s from Sale s where s.id in :ids")
+    List<Sale> findHistoryDetailsByIdIn(@Param("ids") List<Long> ids);
 
     @EntityGraph(attributePaths = {"cashier", "customer", "items", "items.product"})
     @Query("""

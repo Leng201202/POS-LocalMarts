@@ -318,7 +318,7 @@
             </h5>
 
             <span class="badge bg-primary"
-                  th:text="${#lists.size(customers)} + ' Records'">
+                  th:text="${page.totalElements} + ' Records'">
 
                 0 Records
             </span>
@@ -499,6 +499,27 @@
 
                 </table>
 
+            </div>
+
+            <div th:if="${page.totalPages > 1}"
+                 class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <small class="text-muted"
+                       th:text="'Showing ' + ${page.number * page.size + 1} + '–' + ${page.number * page.size + page.numberOfElements} + ' of ' + ${page.totalElements}">
+                    Showing customers
+                </small>
+                <nav aria-label="Customer pages">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/customer(page=${page.number - 1},keyword=${keyword})}">Previous</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link" th:text="'Page ' + ${page.number + 1} + ' of ' + ${page.totalPages}">Page</span>
+                        </li>
+                        <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/customer(page=${page.number + 1},keyword=${keyword})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
 
         </div>

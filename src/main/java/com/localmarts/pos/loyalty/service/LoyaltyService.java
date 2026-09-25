@@ -10,6 +10,8 @@ import com.localmarts.pos.sale.entity.Sale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -280,6 +282,14 @@ public class LoyaltyService {
 
     public List <LoyaltyTransaction> filter(TransactionType type) {
         return loyaltyTransactionRepository.filter(type);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LoyaltyTransaction> filter(
+            TransactionType type,
+            Pageable pageable
+    ) {
+        return loyaltyTransactionRepository.filter(type, pageable);
     }
 
     private PointMovement applyRefundPointMovement(

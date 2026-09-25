@@ -6,12 +6,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("customer")
 public class CustomerController {
+    private static final int PAGE_SIZE = 20;
     private final CustomerService customerService;
     private final CurrentUserService currentUserService;
 
@@ -19,12 +22,18 @@ public class CustomerController {
     @GetMapping
     public String list(
             @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
             Model model
     ) {
+        Page<Customer> customerPage = customerService.filter(
+                keyword,
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE)
+        );
         model.addAttribute(
                 "customers",
-                customerService.filter(keyword)
+                customerPage.getContent()
         );
+        model.addAttribute("page", customerPage);
         model.addAttribute("keyword", keyword);
         return "common/customer/index";
     }

@@ -6,6 +6,8 @@ import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.product.entity.Product;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +31,10 @@ public class ProductService {
 
     public List<Product> findAll() {
         return productRepository.findByDeletedAtIsNullOrderByNameAsc();
+    }
+
+    public Page<Product> findAll(Pageable pageable) {
+        return productRepository.findByDeletedAtIsNullOrderByNameAsc(pageable);
     }
 
     public List<Product> findAllActive() {

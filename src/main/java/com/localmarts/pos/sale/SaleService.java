@@ -21,6 +21,9 @@ import com.localmarts.pos.user.UserRepository;
 import com.localmarts.pos.user.entity.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -273,6 +276,28 @@ public class SaleService {
     public List<Sale> getSalesHistory(Long cashierId) {
         return saleRepository
                 .findByCashierIdOrderByTimestampDesc(cashierId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Sale> getSalesHistory(Long cashierId, Pageable pageable) {
+        Page<Long> idPage = saleRepository.findHistoryIdsByCashierId(
+                cashierId,
+                pageable
+        );
+        if (idPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
+        }
+
+        Map<Long, Sale> salesById = saleRepository
+                .findHistoryDetailsByIdIn(idPage.getContent())
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Sale::getId, sale -> sale));
+        List<Sale> orderedSales = idPage.getContent().stream()
+                .map(salesById::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return new PageImpl<>(orderedSales, pageable, idPage.getTotalElements());
     }
 
     @Transactional(readOnly = true)

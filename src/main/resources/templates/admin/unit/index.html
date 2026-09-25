@@ -93,7 +93,7 @@
                             Inactive
                         </span>
                     </td>
-                    <td th:text="${#temporals.format(unit.created_at,'dd MMM yyyy HH:mm')}"></td>
+                    <td th:text="${#temporals.format(unit.createdAt,'dd MMM yyyy HH:mm')}"></td>
                     <td class="text-end">
                         <a th:href="@{/unit/edit/{id}(id=${unit.id})}"
                            class="btn btn-sm btn-outline-primary">

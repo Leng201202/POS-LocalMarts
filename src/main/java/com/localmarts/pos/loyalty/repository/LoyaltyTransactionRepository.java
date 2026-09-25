@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -23,6 +25,25 @@ public interface LoyaltyTransactionRepository extends JpaRepository<LoyaltyTrans
     """)
     List<LoyaltyTransaction> filter(
             @Param("type") TransactionType type
+    );
+
+    @EntityGraph(attributePaths = {"customer", "sale"})
+    @Query(
+            value = """
+                    SELECT l
+                    FROM LoyaltyTransaction l
+                    WHERE (:type IS NULL OR l.type = :type)
+                    ORDER BY l.timestamp DESC, l.id DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(l)
+                    FROM LoyaltyTransaction l
+                    WHERE (:type IS NULL OR l.type = :type)
+                    """
+    )
+    Page<LoyaltyTransaction> filter(
+            @Param("type") TransactionType type,
+            Pageable pageable
     );
 
 }

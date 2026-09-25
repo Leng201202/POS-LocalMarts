@@ -28,6 +28,8 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -52,6 +54,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InventoryController {
 
+    private static final int PAGE_SIZE = 25;
+
     private static final MediaType XLSX_MEDIA_TYPE = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );;
@@ -71,12 +75,19 @@ public class InventoryController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) InventoryType type,
             @RequestParam(required = false) Long actorId,
+            @RequestParam(defaultValue = "0") int page,
             Model model
     ){
-        List<Inventory> inventoryList=inventoryService.filter(keyword, type, actorId);
-        model.addAttribute(
-                "inventories",inventoryList
+        Page<Inventory> inventoryPage = inventoryService.filter(
+                keyword,
+                type,
+                actorId,
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE)
         );
+        model.addAttribute(
+                "inventories", inventoryPage.getContent()
+        );
+        model.addAttribute("page", inventoryPage);
 
         // Filter options
         model.addAttribute("users", userService.findAllActive());
@@ -88,20 +99,20 @@ public class InventoryController {
 
         // Add dash data
         model.addAttribute("stockInCount",
-                inventoryList.stream()
-                        .filter(i->i.getInventoryType()==InventoryType.STOCK_IN)
-                        .count()
+                inventoryService.countFilteredByType(
+                        keyword, type, actorId, InventoryType.STOCK_IN
+                )
                 );
 
         model.addAttribute("saleCount",
-                inventoryList.stream()
-                        .filter(i->i.getInventoryType()==InventoryType.SALE)
-                        .count()
+                inventoryService.countFilteredByType(
+                        keyword, type, actorId, InventoryType.SALE
+                )
                 );
         model.addAttribute("adjustmentCount",
-                inventoryList.stream()
-                        .filter(i->i.getInventoryType()==InventoryType.ADJUSTMENT)
-                        .count()
+                inventoryService.countFilteredByType(
+                        keyword, type, actorId, InventoryType.ADJUSTMENT
+                )
                 );
         return "common/inventory/index";
     }

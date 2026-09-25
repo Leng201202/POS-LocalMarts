@@ -10,11 +10,15 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/products")
 public class ProductController {
+
+    private static final int PAGE_SIZE = 20;
 
     private final ProductService productService;
     private final CategoryService categoryService;
@@ -35,8 +39,15 @@ public class ProductController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("products", productService.findAll());
+    public String list(
+            @RequestParam(defaultValue = "0") int page,
+            Model model
+    ) {
+        Page<Product> productPage = productService.findAll(
+                PageRequest.of(Math.max(page, 0), PAGE_SIZE)
+        );
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("page", productPage);
         return "admin/product/index";
     }
 

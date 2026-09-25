@@ -17,6 +17,9 @@ import com.localmarts.pos.sale.entity.Sale;
 import com.localmarts.pos.sale.entity.SaleItem;
 import com.localmarts.pos.sale.entity.SaleStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -132,6 +135,36 @@ public class RefundService {
                 .filter(this::hasNoRecordedRefundQuantity)
                 .filter(this::hasSafeLoyaltyHistory)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Sale> searchEligibleSales(
+            String invoiceNo,
+            String customerPhone,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            BigDecimal totalAmount,
+            PaymentMethod paymentMethod,
+            Pageable pageable
+    ) {
+        List<Sale> eligibleSales = searchEligibleSales(
+                invoiceNo,
+                customerPhone,
+                dateFrom,
+                dateTo,
+                totalAmount,
+                paymentMethod
+        );
+        int start = Math.toIntExact(Math.min(
+                pageable.getOffset(),
+                eligibleSales.size()
+        ));
+        int end = Math.min(start + pageable.getPageSize(), eligibleSales.size());
+        return new PageImpl<>(
+                eligibleSales.subList(start, end),
+                pageable,
+                eligibleSales.size()
+        );
     }
 
     @Transactional(readOnly = true)
