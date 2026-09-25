@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("unit")
@@ -75,8 +76,19 @@ public class UnitController {
     // Soft delete unit
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable Long id,
-         Authentication authentication) {
-        unitService.softDelete(id, currentUserService.getCurrentUserId(authentication));
+         Authentication authentication,
+         RedirectAttributes redirectAttributes) {
+        try {
+            unitService.softDelete(
+                    id,
+                    currentUserService.getCurrentUserId(authentication)
+            );
+        } catch (RuntimeException exception) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    exception.getMessage()
+            );
+        }
         return "redirect:/unit";
     }
 }

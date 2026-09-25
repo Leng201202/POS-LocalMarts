@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("category")
@@ -65,12 +66,20 @@ public class CategoryController {
     @PostMapping("/delete/{id}")
     public String delete(
             @PathVariable Long id,
-            Authentication authentication) {
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
 
         Long actorId =
                 currentUserService.getCurrentUserId(authentication);
 
-        categoryService.softDelete(id, actorId);
+        try {
+            categoryService.softDelete(id, actorId);
+        } catch (RuntimeException exception) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    exception.getMessage()
+            );
+        }
         return "redirect:/category";
     }
 }

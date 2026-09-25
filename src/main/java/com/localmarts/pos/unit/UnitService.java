@@ -4,6 +4,7 @@ import com.localmarts.pos.audit.AuditService;
 import com.localmarts.pos.audit.entity.AuditDetails;
 import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.utils.AuditChangeHelper;
+import com.localmarts.pos.product.ProductRepository;
 import com.localmarts.pos.unit.entity.Unit;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +16,15 @@ public class UnitService {
 
     private final String entity = "units";
     private final UnitRepository unitRepository;
+    private final ProductRepository productRepository;
     private final AuditService auditService;
 
-    public UnitService(UnitRepository unitRepository, AuditService auditService) {
+    public UnitService(
+            UnitRepository unitRepository,
+            ProductRepository productRepository,
+            AuditService auditService) {
         this.unitRepository = unitRepository;
+        this.productRepository = productRepository;
         this.auditService = auditService;
     }
 
@@ -77,6 +83,21 @@ public class UnitService {
 
     public void softDelete(Long id, Long deletedBy) {
         Unit unit = findById(id);
+
+        if (productRepository.existsByUnitId(id)) {
+            auditService.logFailed(
+                    deletedBy,
+                    AuditAction.DELETE,
+                    entity,
+                    id,
+                    "Failed to delete unit because it is used by a product: "
+                            + unit.getName()
+            );
+            throw new RuntimeException(
+                    "Unit cannot be deleted because it is used by a product"
+            );
+        }
+
         unit.setDeletedBy(deletedBy);
         unit.setDeletedAt(LocalDateTime.now());
         unit.setActive(false);

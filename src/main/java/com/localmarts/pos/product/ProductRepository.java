@@ -21,6 +21,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByBarcodeAndDeletedAtIsNull(String barcode);
 
+    boolean existsByCategoryId(Long categoryId);
+
+    boolean existsByUnitId(Long unitId);
+
     Optional<Product> findFirstByBarcodeAndDeletedAtIsNull(
             String barcode
     );

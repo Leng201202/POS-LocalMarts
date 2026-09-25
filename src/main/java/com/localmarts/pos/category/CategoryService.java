@@ -5,6 +5,7 @@ import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.audit.entity.AuditDetails;
 import com.localmarts.pos.audit.utils.AuditChangeHelper;
 import com.localmarts.pos.category.entity.Category;
+import com.localmarts.pos.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import java.util.List;
 public class CategoryService {
     private final String entity="Category";
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
     private final AuditService auditService;
 
 
@@ -135,6 +137,21 @@ public class CategoryService {
     public void softDelete(Long id, Long deletedBy){
         Category category=categoryRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(()-> new RuntimeException("Category not found"));
+
+        if (productRepository.existsByCategoryId(id)) {
+            auditService.logFailed(
+                    deletedBy,
+                    AuditAction.DELETE,
+                    entity,
+                    id,
+                    "Failed to delete category because it is used by a product: "
+                            + category.getName()
+            );
+            throw new RuntimeException(
+                    "Category cannot be deleted because it is used by a product"
+            );
+        }
+
         category.setDeletedBy(deletedBy);
         category.setDeletedAt(LocalDateTime.now());
         category.setActive(false);
