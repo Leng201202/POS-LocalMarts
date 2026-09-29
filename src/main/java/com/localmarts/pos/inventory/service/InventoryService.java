@@ -43,6 +43,45 @@ public class InventoryService {
     }
 
     @Transactional
+    public Inventory manualStockIn(Long productId, Integer quantity, String reason, Long actorId) {
+        User actor = getActor(actorId);
+        if (actor.getRole() != Role.ADMIN && actor.getRole() != Role.CASHIER) {
+            throw new AccessDeniedException("Manual Stock In requires an administrator or cashier.");
+        }
+        if (productId == null) throw new IllegalArgumentException("Product is required.");
+        if (quantity == null || quantity <= 0) {
+            throw new IllegalArgumentException("Quantity received must be a positive whole number.");
+        }
+        if (reason == null || reason.isBlank() || reason.trim().isEmpty() || reason.trim().length() > 255) {
+            throw new IllegalArgumentException("A reason of 1 to 255 characters is required.");
+        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product was not found."));
+        if (product.getDeletedAt() != null || !Boolean.TRUE.equals(product.getActive())) {
+            throw new IllegalArgumentException("Product is inactive or deleted.");
+        }
+        Integer before = product.getStockQuantity();
+        if (before == null || before < 0) {
+            throw new IllegalArgumentException("Product has invalid current stock.");
+        }
+        if ((long) before + quantity > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Resulting stock exceeds the supported maximum.");
+        }
+        String note = reason.trim();
+        Inventory movement = stockIn(productId, quantity, note, actorId);
+        auditService.logSuccess(actorId, AuditAction.CREATE, "Inventory", movement.getId(),
+                "Manual Stock In",
+                new AuditChangeHelper()
+                        .addChange("operation", null, "Manual Stock In")
+                        .addChange("productId", null, productId)
+                        .addChange("product", null, product.getName())
+                        .addChange("stock", movement.getBeforeStock(), movement.getAfterStock())
+                        .addChange("delta", null, movement.getQuantity())
+                        .addChange("reason", null, note).build());
+        return movement;
+    }
+
+    @Transactional
     public Inventory manualAdjustment(Long productId, InventoryType type, Integer amount,
                                       String reason, Long actorId) {
         User actor = getActor(actorId);

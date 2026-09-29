@@ -1,6 +1,8 @@
 package com.localmarts.pos.inventory;
 
 import com.localmarts.pos.inventory.dto.AdjustmentProduct;
+import com.localmarts.pos.inventory.dto.ManualStockInRequest;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.localmarts.pos.audit.AuditService;
@@ -154,6 +156,43 @@ public class InventoryController {
         }
         redirectAttributes.addFlashAttribute("successMessage", "Stock adjustment saved.");
         return "redirect:/inventory/adjustment";
+    }
+
+    @GetMapping("/stock-in/methods")
+    public String stockInMethods() {
+        return "common/inventory/stock-in-methods";
+    }
+
+    @GetMapping("/stock-in/manual")
+    public String manualStockInForm() {
+        return "common/inventory/manual-stock-in";
+    }
+
+    @PostMapping("/stock-in/manual")
+    public String confirmManualStockIn(
+            @ModelAttribute ManualStockInRequest request, BindingResult bindingResult,
+            Authentication authentication, RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Select a product and enter a valid whole-number quantity.");
+            return "redirect:/inventory/stock-in/manual";
+        }
+        Long actorId = currentUserService.getCurrentUserId(authentication);
+        Inventory movement;
+        try {
+            movement = inventoryService.manualStockIn(
+                    request.getProductId(), request.getQuantity(), request.getReason(), actorId);
+        } catch (IllegalArgumentException e) {
+            // Log business-rule failures after the service transaction has rolled back.
+            auditService.logFailed(actorId, AuditAction.CREATE, "Inventory", null,
+                    "Manual Stock In failed: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/inventory/stock-in/manual";
+        }
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Manual Stock In saved: stock increased from " + movement.getBeforeStock()
+                        + " to " + movement.getAfterStock() + ".");
+        return "redirect:/inventory/stock-in/manual";
     }
 
     @GetMapping("/stock-in")

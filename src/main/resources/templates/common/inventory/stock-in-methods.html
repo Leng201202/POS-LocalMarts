@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock In | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="${dashboardUrl}">
+            <i class="bi bi-shop me-1"></i>LocalMart POS
+        </a>
+        <a th:href="@{/inventory}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Inventory
+        </a>
+    </div>
+</nav>
+<main class="container py-5" style="max-width: 1000px">
+    <h2 class="fw-bold">Stock In</h2>
+    <p class="text-muted mb-4">Choose how to receive stock.</p>
+    <div class="row g-4">
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column align-items-start">
+                    <i class="bi bi-box-arrow-in-down fs-2 text-success mb-3" aria-hidden="true"></i>
+                    <h4>Manual Stock In</h4>
+                    <p class="text-muted">Add received stock to one existing product.</p>
+                    <a th:href="@{/inventory/stock-in/manual}" class="btn btn-success mt-auto">Manual Stock In</a>
+                </div>
+            </div>
+        </div>
+        <div th:if="${showBatchStockIn}" class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4 d-flex flex-column align-items-start">
+                    <i class="bi bi-file-earmark-spreadsheet fs-2 text-primary mb-3" aria-hidden="true"></i>
+                    <h4>Batch Stock In</h4>
+                    <p class="text-muted">Upload an Excel file to receive multiple products at once.</p>
+                    <a th:href="@{/inventory/stock-in}" class="btn btn-primary mt-auto">Batch Stock In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -16,12 +16,19 @@ public class GlobalModelAttribute {
     @ModelAttribute
     public void addGlobalAttributes(Model model, Authentication authentication){
         String dashboardUrl="/login";
+        boolean showBatchStockIn = false;
         if(authentication!=null&&authentication.isAuthenticated()){
-            dashboardUrl=currentUserService.isAdmin(authentication)
+            boolean admin = currentUserService.isAdmin(authentication);
+            showBatchStockIn = admin;
+            dashboardUrl=admin
                     ? "/admin"
                     : "/cashier";
 
         }
         model.addAttribute("dashboardUrl",dashboardUrl);
+        // Navigation visibility only; SecurityConfig remains the authorization authority.
+        model.addAttribute("showBatchStockIn", showBatchStockIn);
+        model.addAttribute("stockInUrl", showBatchStockIn
+                ? "/inventory/stock-in/methods" : "/inventory/stock-in/manual");
     }
 }

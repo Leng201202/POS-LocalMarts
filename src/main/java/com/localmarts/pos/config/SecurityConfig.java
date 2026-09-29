@@ -33,9 +33,10 @@ public class SecurityConfig {
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,
-                                "/inventory", "/inventory/adjustment", "/inventory/adjustment/products")
+                                "/inventory", "/inventory/adjustment", "/inventory/adjustment/products",
+                                "/inventory/stock-in/manual")
                         .hasAnyRole("ADMIN", "CASHIER")
-                        .requestMatchers(HttpMethod.POST, "/inventory/adjustment")
+                        .requestMatchers(HttpMethod.POST, "/inventory/adjustment", "/inventory/stock-in/manual")
                         .hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers("/inventory", "/inventory/**").hasRole("ADMIN")
                         .requestMatchers(

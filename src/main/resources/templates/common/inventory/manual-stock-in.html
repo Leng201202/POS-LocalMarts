@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Stock In | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="${dashboardUrl}">LocalMart POS</a>
+        <a th:href="@{/inventory}" class="btn btn-outline-secondary btn-sm">Back to Inventory</a>
+    </div>
+</nav>
+<main class="container py-5" style="max-width: 850px">
+    <h2 class="fw-bold">Manual Stock In</h2>
+    <p class="text-muted">Add received stock to an existing product.</p>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <label for="productSearch" class="form-label fw-semibold">Search Product</label>
+            <input id="productSearch" class="form-control" type="search" autocomplete="off"
+                   placeholder="Search by product name or barcode"
+                   th:attr="data-lookup-url=@{/inventory/adjustment/products}">
+            <div id="searchStatus" class="form-text" role="status" aria-live="polite">Type to search existing active products.</div>
+            <div id="searchResults" class="list-group mt-3"></div>
+        </div>
+    </div>
+
+    <form id="manualStockInForm" th:action="@{/inventory/stock-in/manual}" method="post"
+          class="card border-0 shadow-sm" hidden>
+        <div class="card-body p-4">
+            <input id="productId" name="productId" type="hidden">
+            <div class="d-flex justify-content-between gap-2 mb-3">
+                <div>
+                    <h5 id="productName" class="fw-bold"></h5>
+                    <div id="productDetails" class="text-muted"></div>
+                    <div>Barcode: <span id="productBarcode"></span></div>
+                </div>
+                <button id="changeProduct" type="button" class="btn btn-outline-secondary align-self-start">Change Product</button>
+            </div>
+            <p>Current Stock: <strong id="currentStock"></strong> <span id="productUnit"></span></p>
+            <label for="quantity" class="form-label fw-semibold">Quantity Received <span class="text-danger">*</span></label>
+            <input id="quantity" name="quantity" type="number" min="1" max="2147483647" step="1"
+                   class="form-control" required aria-describedby="quantityHelp">
+            <div id="quantityHelp" class="form-text">Enter the number of units received.</div>
+            <label for="reason" class="form-label fw-semibold mt-3">Reason / Note <span class="text-danger">*</span></label>
+            <textarea id="reason" name="reason" class="form-control" rows="3" maxlength="255"
+                      placeholder="Example: New delivery" required></textarea>
+            <div id="preview" class="alert alert-info mt-4" aria-live="polite" hidden></div>
+            <p class="text-muted small mt-3">The preview is informational only. Current stock is checked again when you confirm.
+                Product prices and dates remain unchanged.</p>
+            <div class="d-flex justify-content-end gap-2">
+                <a th:href="@{/inventory}" class="btn btn-outline-secondary">Cancel</a>
+                <button id="confirmButton" type="submit" class="btn btn-success">Confirm Manual Stock In</button>
+            </div>
+        </div>
+    </form>
+</main>
+<script th:src="@{/js/inventory/manual-stock-in.js}"></script>
+</body>
+</html>
