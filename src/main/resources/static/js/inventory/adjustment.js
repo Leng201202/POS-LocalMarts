@@ -41,11 +41,25 @@
     const previewAfterStock =
     document.getElementById("previewAfterStock");
 
+    const adjustmentType = document.getElementById("adjustmentType");
+    adjustmentType.addEventListener("change", function () {
+        const correction = adjustmentType.value === "ADJUSTMENT";
+        document.getElementById("amountLabel").textContent = correction ? "Actual Physical Stock" : "Quantity";
+        document.getElementById("amountHelp").textContent = correction
+            ? "Enter the actual quantity counted in the shop."
+            : "Enter the quantity to remove from sellable stock.";
+        actualStockInput.min = correction ? "0" : "1";
+        actualStockInput.value = "";
+        actualStockInput.dispatchEvent(new Event("input"));
+    });
+
     let selectedProduct = null;
+    let searchVersion = 0;
     let searchTimeout = null;
 
     productSearch.addEventListener("input", function () {
     clearTimeout(searchTimeout);
+    const version = ++searchVersion;
 
     const keyword = productSearch.value.trim();
 
@@ -59,7 +73,7 @@
     searchTimeout = setTimeout(async function () {
     try {
     const response = await fetch(
-    "/products/search?keyword=" +
+    "/inventory/adjustment/products?keyword=" +
     encodeURIComponent(keyword)
     );
 
@@ -69,8 +83,10 @@
 
     const products = await response.json();
 
+    if (version !== searchVersion) return;
     renderSearchResults(products);
 } catch (error) {
+    if (version !== searchVersion) return;
     searchResults.innerHTML = `
                     <div class="alert alert-danger mb-0">
                         Unable to search products. Please try again.
@@ -134,6 +150,7 @@
 
     function selectProduct(product) {
         selectedProduct = product;
+        ++searchVersion;
 
         productIdInput.value = product.id;
         selectedProductName.textContent = product.name;
@@ -175,6 +192,7 @@
     });
 
         actualStockInput.addEventListener("input", function () {
+        actualStockInput.setCustomValidity("");
         if (!selectedProduct || actualStockInput.value === "") {
         stockDifference.textContent = "-";
         stockDifference.className = "difference-zero";
@@ -188,8 +206,17 @@
         const actualStock =
         Number(actualStockInput.value);
 
-        const difference =
-        actualStock - currentStock;
+        const afterStock = adjustmentType.value === "ADJUSTMENT"
+            ? actualStock : currentStock - actualStock;
+        const valid = Number.isInteger(actualStock) && actualStock >= Number(actualStockInput.min)
+            && actualStock <= 2147483647 && afterStock >= 0 && afterStock !== currentStock;
+        actualStockInput.setCustomValidity(valid ? "" : "Enter a valid quantity that changes stock without making it negative.");
+        if (!valid) {
+            stockDifference.textContent = "-";
+            adjustmentPreview.classList.add("d-none");
+            return;
+        }
+        const difference = afterStock - currentStock;
 
         stockDifference.textContent =
         difference > 0
@@ -205,7 +232,7 @@
     }
 
         previewBeforeStock.textContent = currentStock;
-        previewAfterStock.textContent = actualStock;
+        previewAfterStock.textContent = afterStock;
 
         adjustmentPreview.classList.remove("d-none");
     });
@@ -218,3 +245,12 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
+
+    actualStockInput.form.addEventListener("submit", function (event) {
+        actualStockInput.dispatchEvent(new Event("input"));
+        if (!selectedProduct || !this.reportValidity()) {
+            event.preventDefault();
+            return;
+        }
+        this.querySelector('button[type="submit"]').disabled = true;
+    });

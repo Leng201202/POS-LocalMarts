@@ -1,5 +1,7 @@
 package com.localmarts.pos.config;
 
+import org.springframework.http.HttpMethod;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,8 +32,13 @@ public class SecurityConfig {
                                 "/users","/users/**",
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,
+                                "/inventory", "/inventory/adjustment", "/inventory/adjustment/products")
+                        .hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers(HttpMethod.POST, "/inventory/adjustment")
+                        .hasAnyRole("ADMIN", "CASHIER")
+                        .requestMatchers("/inventory", "/inventory/**").hasRole("ADMIN")
                         .requestMatchers(
-                                "/inventory", "/inventory/**",
                                 "/customer", "/customer/**",
                                 "/pos/scanner", "/pos/scanner/**",
                                 "/cashier", "/cashier/**"

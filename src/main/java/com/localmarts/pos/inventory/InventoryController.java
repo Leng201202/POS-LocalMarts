@@ -1,5 +1,8 @@
 package com.localmarts.pos.inventory;
 
+import com.localmarts.pos.inventory.dto.AdjustmentProduct;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.localmarts.pos.audit.AuditService;
 import com.localmarts.pos.audit.utils.AuditAction;
 import com.localmarts.pos.category.CategoryService;
@@ -110,8 +113,8 @@ public class InventoryController {
                 )
                 );
         model.addAttribute("adjustmentCount",
-                inventoryService.countFilteredByType(
-                        keyword, type, actorId, InventoryType.ADJUSTMENT
+                inventoryService.countFilteredAdjustments(
+                        keyword, type, actorId
                 )
                 );
         return "common/inventory/index";
@@ -120,9 +123,37 @@ public class InventoryController {
 
 
     @GetMapping("/adjustment")
-    public String adjustmentForm(Model model) {
-        //model.addAttribute("products", productService.findAll());
+    public String adjustmentForm(Model model, Authentication authentication) {
+        model.addAttribute("adminAdjustment", currentUserService.isAdmin(authentication));
         return "common/inventory/adjustment";
+    }
+
+    @GetMapping("/adjustment/products")
+    @ResponseBody
+    public List<AdjustmentProduct> adjustmentProducts(
+            @RequestParam(defaultValue = "") String keyword) {
+        return inventoryService.searchAdjustmentProducts(keyword);
+    }
+
+    @PostMapping("/adjustment")
+    public String confirmAdjustment(
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) InventoryType type,
+            @RequestParam(required = false) Integer amount,
+            @RequestParam(required = false) String reason,
+            Authentication authentication, RedirectAttributes redirectAttributes) {
+        Long actorId = currentUserService.getCurrentUserId(authentication);
+        try {
+            inventoryService.manualAdjustment(productId, type, amount, reason, actorId);
+        } catch (IllegalArgumentException e) {
+            // Like stock-in failures, log after the failed transaction has rolled back.
+            auditService.logFailed(actorId, AuditAction.CREATE, "Inventory", null,
+                    "Manual stock adjustment failed: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/inventory/adjustment";
+        }
+        redirectAttributes.addFlashAttribute("successMessage", "Stock adjustment saved.");
+        return "redirect:/inventory/adjustment";
     }
 
     @GetMapping("/stock-in")

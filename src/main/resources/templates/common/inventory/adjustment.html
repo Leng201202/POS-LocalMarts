@@ -49,7 +49,7 @@
     <div class="container-fluid px-4">
 
         <a class="navbar-brand fw-bold"
-           th:href="@{/templates/admin}">
+           th:href="${dashboardUrl}">
             <i class="bi bi-shop me-1"></i>
             LocalMart POS
         </a>
@@ -66,6 +66,8 @@
 </nav>
 
 <main class="container py-5">
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
 
     <div class="row justify-content-center">
         <div class="col-lg-9 col-xl-8">
@@ -76,8 +78,7 @@
                 </h2>
 
                 <p class="text-muted mb-0">
-                    Search for a product, compare the system stock with the
-                    physical count, and save the corrected quantity.
+                    Record damaged, expired or missing store stock, or correct a physical count.
                 </p>
             </div>
 
@@ -200,26 +201,36 @@
                         </div>
 
                         <div class="row g-3">
+                            <div class="col-12">
+                                <label for="adjustmentType" class="form-label fw-semibold">Adjustment Type</label>
+                                <select id="adjustmentType" name="type" class="form-select" required>
+                                    <option value="DAMAGE">Damaged</option>
+                                    <option value="EXPIRED">Expired</option>
+                                    <option th:if="${adminAdjustment}" value="MISSING">Missing</option>
+                                    <option th:if="${adminAdjustment}" value="ADJUSTMENT">Stock Correction</option>
+                                </select>
+                            </div>
 
                             <div class="col-md-6">
 
                                 <label for="actualStock"
                                        class="form-label fw-semibold">
-                                    Actual Physical Stock
+                                    <span id="amountLabel">Quantity</span>
                                     <span class="text-danger">*</span>
                                 </label>
 
                                 <input id="actualStock"
                                        type="number"
-                                       name="actualStock"
-                                       min="0"
+                                       name="amount"
+                                       min="1"
+                                       max="2147483647"
                                        step="1"
                                        class="form-control"
-                                       placeholder="Enter physically counted stock"
+                                       placeholder="Enter quantity"
                                        required>
 
                                 <div class="form-text">
-                                    Enter the actual quantity counted in the shop.
+                                    <span id="amountHelp">Enter the quantity to remove from sellable stock.</span>
                                 </div>
 
                             </div>
@@ -238,7 +249,7 @@
                                 </div>
 
                                 <div class="form-text">
-                                    Actual stock minus current system stock.
+                                    Preview only. Current stock is checked again when you confirm.
                                 </div>
 
                             </div>
@@ -288,7 +299,7 @@
                             <button type="submit"
                                     class="btn btn-warning">
                                 <i class="bi bi-check-circle me-1"></i>
-                                Save Adjustment
+                                Confirm Adjustment
                             </button>
 
                         </div>

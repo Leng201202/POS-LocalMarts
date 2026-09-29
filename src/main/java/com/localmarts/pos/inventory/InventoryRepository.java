@@ -67,4 +67,28 @@ public interface InventoryRepository extends JpaRepository<Inventory,Long> {
             @Param("countedType") InventoryType countedType
     );
 
+    // Refund-condition DAMAGE/EXPIRED history has zero stock impact and is excluded.
+    @Query("""
+    SELECT COUNT(i) FROM Inventory i WHERE (
+        :keyword IS NULL
+        OR TRIM(:keyword) = ''
+        OR LOWER(i.product.name) LIKE LOWER(CONCAT('%',:keyword,'%'))
+        OR LOWER(COALESCE(i.product.barcode,'')) LIKE LOWER(CONCAT('%',:keyword,'%'))
+    )
+    AND (:selectedType IS NULL OR i.inventoryType = :selectedType)
+    AND (:actorId IS NULL OR i.actor.id = :actorId)
+    AND i.inventoryType IN (
+        com.localmarts.pos.inventory.entity.InventoryType.ADJUSTMENT,
+        com.localmarts.pos.inventory.entity.InventoryType.DAMAGE,
+        com.localmarts.pos.inventory.entity.InventoryType.EXPIRED,
+        com.localmarts.pos.inventory.entity.InventoryType.MISSING
+    )
+    AND i.quantity <> 0
+    """)
+    long countFilteredAdjustments(
+            @Param("keyword") String keyword,
+            @Param("selectedType") InventoryType selectedType,
+            @Param("actorId") Long actorId
+    );
+
 }

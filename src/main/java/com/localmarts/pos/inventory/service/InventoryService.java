@@ -1,5 +1,12 @@
 package com.localmarts.pos.inventory.service;
 
+import com.localmarts.pos.audit.AuditService;
+import com.localmarts.pos.audit.utils.AuditAction;
+import com.localmarts.pos.audit.utils.AuditChangeHelper;
+import com.localmarts.pos.inventory.dto.AdjustmentProduct;
+import com.localmarts.pos.user.entity.Role;
+import org.springframework.security.access.AccessDeniedException;
+
 import com.localmarts.pos.inventory.InventoryRepository;
 import com.localmarts.pos.inventory.entity.Inventory;
 import com.localmarts.pos.inventory.entity.InventoryType;
@@ -22,6 +29,68 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
+
+    @Transactional(readOnly = true)
+    public List<AdjustmentProduct> searchAdjustmentProducts(String keyword) {
+        if (keyword == null || keyword.isBlank()) return List.of();
+        return productRepository.searchActiveByNameOrBarcode(keyword.trim()).stream()
+                .limit(25)
+                .map(p -> new AdjustmentProduct(
+                        p.getId(), p.getName(), p.getBarcode(), p.getSize(),
+                        p.getUnit() == null ? null : p.getUnit().getName(), p.getStockQuantity()))
+                .toList();
+    }
+
+    @Transactional
+    public Inventory manualAdjustment(Long productId, InventoryType type, Integer amount,
+                                      String reason, Long actorId) {
+        User actor = getActor(actorId);
+        boolean admin = actor.getRole() == Role.ADMIN;
+        boolean cashier = actor.getRole() == Role.CASHIER;
+        if ((!admin && !cashier) || (!admin && type != InventoryType.DAMAGE && type != InventoryType.EXPIRED)) {
+            throw new AccessDeniedException("This adjustment type requires an administrator.");
+        }
+        if (type != InventoryType.DAMAGE && type != InventoryType.EXPIRED
+                && type != InventoryType.MISSING && type != InventoryType.ADJUSTMENT) {
+            throw new IllegalArgumentException("Select a valid adjustment type.");
+        }
+        if (productId == null) throw new IllegalArgumentException("Product is required.");
+        if (reason == null || reason.isBlank() || reason.trim().length() > 255) {
+            throw new IllegalArgumentException("A reason of 1 to 255 characters is required.");
+        }
+        if (amount == null || amount < (type == InventoryType.ADJUSTMENT ? 0 : 1)) {
+            throw new IllegalArgumentException(type == InventoryType.ADJUSTMENT
+                    ? "Actual physical stock must be zero or greater." : "Quantity must be a positive whole number.");
+        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product was not found."));
+        if (product.getDeletedAt() != null || !Boolean.TRUE.equals(product.getActive())) {
+            throw new IllegalArgumentException("Product is inactive or deleted.");
+        }
+        if (product.getStockQuantity() == null || product.getStockQuantity() < 0) {
+            throw new IllegalArgumentException("Product has invalid current stock.");
+        }
+        String note = reason.trim();
+        Inventory movement = switch (type) {
+            case DAMAGE -> damaged(productId, amount, note, actorId);
+            case EXPIRED -> expired(productId, amount, note, actorId);
+            case MISSING -> missing(productId, amount, note, actorId);
+            case ADJUSTMENT -> adjustment(productId, amount, note, actorId);
+            default -> throw new IllegalArgumentException("Invalid adjustment type.");
+        };
+        auditService.logSuccess(actorId, AuditAction.CREATE,
+                "Inventory", movement.getId(), "Manual stock adjustment: " + type,
+                new AuditChangeHelper()
+                        .addChange("productId", null, productId)
+                        .addChange("product", null, product.getName())
+                        .addChange("adjustmentType", null, type)
+                        .addChange("stock", movement.getBeforeStock(), movement.getAfterStock())
+                        .addChange("delta", null, movement.getQuantity())
+                        .addChange("reason", null, note).build());
+        return movement;
+    }
+
 
     public List<Inventory> findAll(){
         return inventoryRepository.findAllByOrderByTimestampDesc();
@@ -59,6 +128,11 @@ public class InventoryService {
                 actorId,
                 countedType
         );
+    }
+
+    @Transactional(readOnly = true)
+    public long countFilteredAdjustments(String keyword, InventoryType selectedType, Long actorId) {
+        return inventoryRepository.countFilteredAdjustments(normalize(keyword), selectedType, actorId);
     }
 
     private String normalize(String keyword) {
