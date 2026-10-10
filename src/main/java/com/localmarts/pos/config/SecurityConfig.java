@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/inventory/adjustment", "/inventory/stock-in/manual")
                         .hasAnyRole("ADMIN", "CASHIER")
                         .requestMatchers("/inventory", "/inventory/**").hasRole("ADMIN")
+                        .requestMatchers("/cashier/reports", "/cashier/reports/**").hasRole("CASHIER")
                         .requestMatchers(
                                 "/customer", "/customer/**",
                                 "/pos/scanner", "/pos/scanner/**",

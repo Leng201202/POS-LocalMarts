@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale Reports | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar bg-white shadow-sm"><div class="container-fluid px-4">
+    <a class="navbar-brand fw-bold" th:href="@{${dashboardUrl}}"><i class="bi bi-shop me-1"></i>LocalMart POS</a>
+    <a class="btn btn-outline-secondary btn-sm" th:href="@{${dashboardUrl}}">Dashboard</a>
+</div></nav>
+<main class="container-fluid px-4 py-4">
+<h2>Report unavailable</h2><p class="alert alert-danger" role="alert" th:text="${error}"></p>
+<a class="btn btn-outline-secondary" th:href="@{/cashier/reports}">My Reports</a>
+</main></body></html>

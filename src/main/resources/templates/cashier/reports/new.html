@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale Reports | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<nav class="navbar bg-white shadow-sm"><div class="container-fluid px-4">
+    <a class="navbar-brand fw-bold" th:href="@{${dashboardUrl}}"><i class="bi bi-shop me-1"></i>LocalMart POS</a>
+    <a class="btn btn-outline-secondary btn-sm" th:href="@{${dashboardUrl}}">Dashboard</a>
+</div></nav>
+<main class="container-fluid px-4 py-4">
+<div class="d-flex justify-content-between mb-4"><h2 class="fw-bold">Generate Report</h2>
+<a class="btn btn-outline-secondary" th:href="@{/cashier/reports}">Back to Sale Reports</a></div>
+<div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+<div class="card border-0 shadow-sm"><div class="card-body p-4">
+<form th:action="@{/cashier/reports/preview}" method="post" th:object="${request}" id="report-period-form">
+    <div class="mb-3"><label for="type" class="form-label">Report type</label>
+        <select id="type" th:field="*{type}" class="form-select" required>
+            <option value="DAILY">Daily</option><option value="WEEKLY">Weekly</option><option value="CUSTOM">Custom</option>
+        </select>
+    </div>
+    <div class="mb-3" id="single-date"><label for="date" id="report-date-label" class="form-label" th:text="${request.type?.name() == 'WEEKLY' ? 'Weekly report end date' : 'Report date'}">Report date</label>
+        <input id="date" type="date" th:field="*{date}" class="form-control" aria-describedby="weekly-date-help">
+        <p id="weekly-date-help" class="form-text" th:hidden="${request.type?.name() != 'WEEKLY'}">Select the final day of the 7-day reporting period.</p>
+    </div>
+    <div class="row g-3 mb-3" id="custom-dates">
+        <div class="col-md-6"><label for="startDate" class="form-label">Start date (Custom)</label><input id="startDate" type="date" th:field="*{startDate}" class="form-control"></div>
+        <div class="col-md-6"><label for="endDate" class="form-label">End date (inclusive)</label><input id="endDate" type="date" th:field="*{endDate}" class="form-control"></div>
+    </div>
+    <p id="period-range" class="fw-semibold" aria-live="polite"></p>
+    <p class="text-muted">All dates use Asia/Bangkok time. Active periods include data through preview generation time.</p>
+    <button type="submit" class="btn btn-primary">Generate Preview</button>
+</form>
+</div></div>
+</main><script th:src="@{/js/cashier-report.js}" defer></script></body></html>

@@ -17,6 +17,19 @@ import java.util.Optional;
 
 public interface SaleRepository extends JpaRepository<Sale, Long> {
 
+    @EntityGraph(attributePaths = {"cashier", "customer", "items", "items.product"})
+    @Query("""
+            select distinct s from Sale s
+            where s.cashier.id = :actorId and s.timestamp >= :start and s.timestamp < :cutoff
+              and s.paymentStatus = com.localmarts.pos.sale.entity.PaymentStatus.PAID
+              and s.saleStatus in (com.localmarts.pos.sale.entity.SaleStatus.COMPLETED,
+                  com.localmarts.pos.sale.entity.SaleStatus.PARTIALLY_REFUNDED,
+                  com.localmarts.pos.sale.entity.SaleStatus.REFUNDED)
+            order by s.timestamp, s.id
+            """)
+    List<Sale> findCashierReportSales(@Param("actorId") Long actorId,
+            @Param("start") LocalDateTime start, @Param("cutoff") LocalDateTime cutoff);
+
     boolean existsByInvoiceNo(String invoiceNo);
 
     @Query("""

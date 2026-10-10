@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale Reports | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/cashier-report.css}" rel="stylesheet">
+</head>
+<body class="report-page">
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold" th:href="@{${dashboardUrl}}"><i class="bi bi-shop me-1"></i>LocalMart POS</a>
+        <a class="btn btn-outline-secondary btn-sm" th:href="@{${dashboardUrl}}">Dashboard</a>
+    </div>
+</nav>
+
+<main class="container-fluid px-3 px-md-4 py-4">
+    <div class="report-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h2 fw-bold mb-1" th:text="${saved == null ? 'Sale Report Preview' : 'Submitted Cashier Sale Report'}">Sale Report Preview</h1>
+            <p class="text-muted mb-0" th:text="${saved == null ? 'Review the report and reconcile counted cash before submission.' : 'View the final immutable report submitted for this period.'}"></p>
+        </div>
+        <div class="d-flex flex-wrap gap-2" aria-label="Report navigation">
+            <a class="btn btn-outline-secondary" th:href="@{/cashier/reports}"><i class="bi bi-journal-text me-1"></i>My Reports</a>
+            <a class="btn btn-primary" th:href="@{/cashier/reports/new}"><i class="bi bi-plus-lg me-1"></i>Generate Another Report</a>
+            <a th:if="${saved != null}" class="btn btn-success"
+               th:href="@{/cashier/reports/{id}/pdf(id=${saved.id})}"><i class="bi bi-file-earmark-pdf me-1"></i>Download PDF</a>
+        </div>
+    </div>
+
+    <div class="report-page-header" th:if="${error}">
+        <div class="alert alert-danger" role="alert">
+            <span th:text="${error}"></span>
+            <a class="alert-link ms-1" th:if="${existingReportId != null}"
+               th:href="@{/cashier/reports/{id}(id=${existingReportId})}">View existing report</a>
+        </div>
+    </div>
+
+    <div class="report-page-header"
+         th:if="${saved == null and report.period.cutoff.isBefore(report.period.endDate.plusDays(1).atStartOfDay())}">
+        <div class="alert alert-warning">
+            <strong>Active reporting period.</strong>
+            This preview contains data through
+            <span th:text="${#temporals.format(report.period.cutoff, 'dd MMM yyyy HH:mm:ss')}"></span>
+            (Asia/Bangkok). Later transactions will not be added. Submitting uses this exact date range and cutoff;
+            generate a new preview first if newer data is required.
+        </div>
+    </div>
+
+    <article id="report-document" class="report-document" aria-label="Cashier sale report document">
+        <header class="report-document-header">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <div class="report-brand">LocalMart POS</div>
+                    <h2 class="report-title">Cashier Sale Report</h2>
+                </div>
+                <span th:if="${saved == null}" class="report-state report-state-preview">
+                    <i class="bi bi-eye" aria-hidden="true"></i>PREVIEW / NOT SUBMITTED
+                </span>
+                <span th:if="${saved != null}" class="report-state report-state-final">
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>FINAL / SUBMITTED
+                </span>
+            </div>
+
+            <h3 class="report-section-title"><span class="report-section-kicker">A.</span>Report Information</h3>
+            <div class="report-meta-grid">
+                <div>
+                    <span class="report-meta-label">Report type</span>
+                    <p class="report-meta-value"
+                       th:text="${report.period.type.name() == 'DAILY' ? 'Daily' : (report.period.type.name() == 'WEEKLY' ? 'Weekly' : 'Custom')}">Daily</p>
+                </div>
+                <div>
+                    <span class="report-meta-label">Inclusive report period</span>
+                    <p class="report-meta-value">
+                        <span th:text="${#temporals.format(report.period.startDate, 'dd MMM yyyy')}"></span>
+                        –
+                        <span th:text="${#temporals.format(report.period.endDate, 'dd MMM yyyy')}"></span>
+                    </p>
+                </div>
+                <div>
+                    <span class="report-meta-label">Cashier</span>
+                    <p class="report-meta-value"><span th:text="${report.cashierName}"></span> · <span th:text="${report.cashierUsername}"></span></p>
+                </div>
+                <div>
+                    <span class="report-meta-label">Generated timestamp</span>
+                    <p class="report-meta-value"><span th:text="${#temporals.format(report.period.generatedAt, 'dd MMM yyyy HH:mm:ss')}"></span> (Asia/Bangkok)</p>
+                </div>
+                <div>
+                    <span class="report-meta-label">Data-through cutoff</span>
+                    <p class="report-meta-value"><span th:text="${#temporals.format(report.period.cutoff, 'dd MMM yyyy HH:mm:ss')}"></span> (Asia/Bangkok; exclusive cutoff)</p>
+                </div>
+                <div th:if="${saved != null}">
+                    <span class="report-meta-label">Submission</span>
+                    <p class="report-meta-value">Report #<span th:text="${saved.id}"></span> · <span th:text="${#temporals.format(saved.submittedAt, 'dd MMM yyyy HH:mm:ss')}"></span> (Asia/Bangkok)</p>
+                </div>
+                <div th:if="${saved == null}">
+                    <span class="report-meta-label">Submission</span>
+                    <p class="report-meta-value">Not submitted</p>
+                </div>
+            </div>
+        </header>
+
+        <div th:if="${report.legacyUnitSplitsUnavailable}" class="alert alert-info m-4 mb-0">
+            Some historical refunds have no regular/discounted unit split. Financial totals and total returned quantities are included; the missing split is shown as unavailable.
+        </div>
+
+        <section class="report-section" aria-labelledby="sales-summary-heading">
+            <h3 id="sales-summary-heading" class="report-section-title"><span class="report-section-kicker">B.</span>Sales Summary</h3>
+            <div class="report-summary-grid">
+                <div class="summary-item"><span class="summary-label">Total sales transactions</span><span class="summary-value" th:text="${report.summary.transactions}"></span></div>
+                <div class="summary-item"><span class="summary-label">Total Sales (All Payment Methods)</span><span class="summary-value" th:text="|THB ${#numbers.formatDecimal(report.summary.salesAmount, 1, 2)}|"></span></div>
+                <div class="summary-item"><span class="summary-label">Average sale value</span><span class="summary-value" th:text="${report.summary.averageSaleValue == null ? '—' : 'THB ' + #numbers.formatDecimal(report.summary.averageSaleValue, 1, 2)}"></span></div>
+                <div class="summary-item"><span class="summary-label">Total discount</span><span class="summary-value" th:text="|THB ${#numbers.formatDecimal(report.summary.totalDiscount, 1, 2)}|"></span></div>
+                <div class="summary-item"><span class="summary-label">Refunds against these sales</span><span class="summary-value"><span th:text="${report.summary.refundCount}"></span> events · <span th:text="|THB ${#numbers.formatDecimal(report.summary.refundAmount, 1, 2)}|"></span></span></div>
+                <div class="summary-item"><span class="summary-label">Retained sale amount</span><span class="summary-value" th:text="|THB ${#numbers.formatDecimal(report.summary.retainedAmount, 1, 2)}|"></span></div>
+                <div class="summary-item">
+                    <span class="summary-label">Best-selling product</span>
+                    <span class="summary-value" th:if="${report.summary.bestSeller == null}">None</span>
+                    <span class="summary-value" th:if="${report.summary.bestSeller != null}"><span th:text="${report.summary.bestSeller.name}"></span> · <span th:text="${report.summary.bestSeller.netUnits}"></span> net units</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="report-section" aria-labelledby="payment-summary-heading">
+            <h3 id="payment-summary-heading" class="report-section-title"><span class="report-section-kicker">C.</span>Payment Summary</h3>
+            <p class="text-muted small">Receipts are from the selected sales. Refunds in this summary were processed by <span th:text="${report.cashierName}"></span> during the report period, including refunds for another cashier's sales.</p>
+            <div class="table-responsive">
+                <table class="table report-table align-middle">
+                    <thead class="table-light"><tr><th>Payment</th><th>Receipts</th><th>Refunds</th><th>Net</th></tr></thead>
+                    <tbody>
+                    <tr th:each="row : ${report.payments}">
+                        <td th:text="${row.method}"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(row.receipts, 1, 2)}|"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(row.refunds, 1, 2)}|"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(row.net, 1, 2)}|"></td>
+                    </tr>
+                    </tbody>
+                    <tfoot class="fw-bold"><tr><td>Total</td><td th:text="|THB ${#numbers.formatDecimal(report.paymentTotal.receipts, 1, 2)}|"></td><td th:text="|THB ${#numbers.formatDecimal(report.paymentTotal.refunds, 1, 2)}|"></td><td th:text="|THB ${#numbers.formatDecimal(report.paymentTotal.net, 1, 2)}|"></td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="report-section" aria-labelledby="cash-reconciliation-heading">
+            <h3 id="cash-reconciliation-heading" class="report-section-title"><span class="report-section-kicker">D.</span>Cash Reconciliation</h3>
+            <p class="text-muted small mb-3">System Cash includes CASH receipts minus CASH refunds processed by <span th:text="${report.cashierName}"></span>. Opening cash is excluded. CARD and QR receipts are included in Total Sales but not System Cash.</p>
+            <div class="cash-reconciliation">
+                <form th:if="${saved == null}" id="submit-report" th:action="@{/cashier/reports/submit}" method="post">
+                    <input type="hidden" name="previewToken" th:value="${report.token}">
+                    <div class="reconciliation-grid">
+                        <div class="reconciliation-item">
+                            <span class="reconciliation-label">System Cash (Transactions)</span>
+                            <span id="system-cash" class="reconciliation-value" th:text="|THB ${#numbers.formatDecimal(report.systemCash, 1, 2)}|" th:attr="data-amount=${report.systemCash}"></span>
+                        </div>
+                        <div class="reconciliation-item">
+                            <label for="real-world-cash" class="reconciliation-label">Counted Cash (Real-World)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">THB</span>
+                                <input type="text" id="real-world-cash" name="realWorldCash" required maxlength="15"
+                                       pattern="[0-9]{1,12}(\.[0-9]{1,2})?" inputmode="decimal" class="form-control"
+                                       autocomplete="off" aria-describedby="cash-help cash-error">
+                            </div>
+                        </div>
+                        <div class="reconciliation-item">
+                            <span class="reconciliation-label">Cash Difference</span>
+                            <span class="reconciliation-value">THB <output id="cash-difference">—</output></span>
+                        </div>
+                        <div class="reconciliation-item">
+                            <span class="reconciliation-label">Difference Status</span>
+                            <span id="cash-status" class="badge difference-status text-bg-secondary">WAITING FOR COUNT</span>
+                        </div>
+                    </div>
+                    <p id="cash-help" class="text-muted small mt-3 mb-1">Enter an amount from 0 to 999999999999.99 with at most two decimals. The live preview is for guidance; the server calculates and validates the final difference on submission.</p>
+                    <p id="cash-error" class="text-danger small mb-0" role="alert"></p>
+                </form>
+
+                <div th:if="${saved != null}" class="reconciliation-grid">
+                    <div class="reconciliation-item"><span class="reconciliation-label">System Cash (Transactions)</span><span class="reconciliation-value" th:text="|THB ${#numbers.formatDecimal(saved.systemCash, 1, 2)}|"></span></div>
+                    <div class="reconciliation-item"><span class="reconciliation-label">Counted Cash (Real-World)</span><span class="reconciliation-value" th:text="|THB ${#numbers.formatDecimal(saved.realWorldCash, 1, 2)}|"></span></div>
+                    <div class="reconciliation-item"><span class="reconciliation-label">Cash Difference</span><span class="reconciliation-value" th:text="|THB ${#numbers.formatDecimal(saved.cashDifference, 1, 2)}|"></span></div>
+                    <div class="reconciliation-item">
+                        <span class="reconciliation-label">Difference Status</span>
+                        <span class="badge difference-status"
+                              th:classappend="${saved.status() == 'BALANCED' ? ' text-bg-success' : (saved.status() == 'OVER' ? ' text-bg-warning' : ' text-bg-danger')}"
+                              th:text="${saved.status()}"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="report-section" aria-labelledby="sales-details-heading">
+            <h3 id="sales-details-heading" class="report-section-title"><span class="report-section-kicker">E.</span>Sales Details</h3>
+            <p class="text-muted small">Refund amounts, quantities, and status reflect events before the cutoff, even when a sale was refunded later.</p>
+            <p th:if="${#lists.isEmpty(report.sales)}" class="text-muted">No paid sales in this period.</p>
+            <div class="table-responsive" th:unless="${#lists.isEmpty(report.sales)}">
+                <table class="table report-table align-middle">
+                    <thead class="table-light"><tr><th>Invoice</th><th>Sale time</th><th>Customer</th><th>Payment</th><th>Charged</th><th>Refunded</th><th>Retained</th><th>Status at cutoff</th><th>Original units</th><th>Returned units</th><th>Net units</th></tr></thead>
+                    <tbody>
+                    <tr th:each="sale : ${report.sales}">
+                        <td class="text-break-cell" th:text="${sale.invoice}"></td>
+                        <td th:text="${#temporals.format(sale.timestamp, 'dd MMM yyyy HH:mm:ss')}"></td>
+                        <td class="text-break-cell" th:text="${sale.customer}"></td>
+                        <td th:text="${sale.paymentMethod}"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(sale.chargedAmount, 1, 2)}|"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(sale.refundAmount, 1, 2)}|"></td>
+                        <td th:text="|THB ${#numbers.formatDecimal(sale.retainedAmount, 1, 2)}|"></td>
+                        <td th:text="${sale.status}"></td><td th:text="${sale.originalQuantity}"></td><td th:text="${sale.returnedQuantity}"></td><td th:text="${sale.netQuantity}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <details th:each="sale : ${report.sales}" class="report-detail mt-3">
+                <summary>Items for <span th:text="${sale.invoice}"></span></summary>
+                <div class="report-detail-content table-responsive">
+                    <table class="table table-sm report-table">
+                        <thead><tr><th>Product</th><th>Barcode</th><th>Unit price</th><th>Charged</th><th>Original units</th><th>Returned units</th><th>Net units</th></tr></thead>
+                        <tbody><tr th:each="item : ${sale.items}"><td class="text-break-cell" th:text="${item.productName}"></td><td class="text-break-cell" th:text="${item.barcode}"></td><td th:text="|THB ${#numbers.formatDecimal(item.unitPrice, 1, 2)}|"></td><td th:text="|THB ${#numbers.formatDecimal(item.chargedAmount, 1, 2)}|"></td><td th:text="${item.originalQuantity}"></td><td th:text="${item.returnedQuantity}"></td><td th:text="${item.netQuantity}"></td></tr></tbody>
+                    </table>
+                </div>
+            </details>
+
+            <details th:each="sale : ${report.sales}" th:unless="${#lists.isEmpty(sale.refunds)}" class="report-detail mt-3">
+                <summary>Refund details for <span th:text="${sale.invoice}"></span></summary>
+                <div class="report-detail-content">
+                    <div th:each="refund : ${sale.refunds}" class="border-top pt-3 mt-2">
+                        <p class="mb-2">Event <span th:text="${refund.auditId}"></span> · <span th:text="${#temporals.format(refund.timestamp, 'dd MMM yyyy HH:mm:ss')}"></span> · <span th:text="|THB ${#numbers.formatDecimal(refund.amount, 1, 2)}|"></span></p>
+                        <ul class="mb-0"><li th:each="item : ${refund.items}"><span th:text="${item.productName}"></span>: <span th:text="${item.quantity}"></span> returned, <span th:text="|THB ${#numbers.formatDecimal(item.amount, 1, 2)}|"></span>; regular / discounted: <span th:text="${item.regularUnits == null ? 'Unavailable' : item.regularUnits}"></span> / <span th:text="${item.discountedUnits == null ? 'Unavailable' : item.discountedUnits}"></span></li></ul>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <section class="report-section" aria-labelledby="refunds-processed-heading">
+            <h3 id="refunds-processed-heading" class="report-section-title"><span class="report-section-kicker">F.</span>Refund Activity</h3>
+            <p class="text-muted small">Refund activity for <span th:text="${report.cashierName}"></span>. These refunds were processed during the report period and may relate to sales from another period or another cashier. CARD and QR refunds do not reduce System Cash.</p>
+            <p th:if="${#lists.isEmpty(report.refundsProcessed)}" class="text-muted">No refunds were processed by <span th:text="${report.cashierName}"></span> during this report period.</p>
+            <div class="table-responsive" th:unless="${#lists.isEmpty(report.refundsProcessed)}">
+                <table class="table report-table">
+                    <thead class="table-light"><tr><th>Event</th><th>Refund time</th><th>Original invoice</th><th>Payment</th><th>Refund amount</th></tr></thead>
+                    <tbody><tr th:each="refund : ${report.refundsProcessed}"><td th:text="${refund.auditId}"></td><td th:text="${#temporals.format(refund.timestamp, 'dd MMM yyyy HH:mm:ss')}"></td><td class="text-break-cell" th:text="${refund.invoice}"></td><td th:text="${refund.paymentMethod}"></td><td th:text="|THB ${#numbers.formatDecimal(refund.amount, 1, 2)}|"></td></tr></tbody>
+                </table>
+            </div>
+        </section>
+    </article>
+
+    <section th:if="${saved == null}" class="report-action-area card border-0 shadow-sm" aria-label="Report submission">
+        <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h2 class="h5 mb-1">Submit final report</h2>
+                <p class="mb-1">After submission, this report cannot be edited. The displayed sales and refund data will be saved exactly as shown.</p>
+                <p class="text-muted small mb-0">One report is allowed per exact date range, regardless of report type. Overlapping reports are separate views and must not be added together for financial reconciliation.</p>
+            </div>
+            <button form="submit-report" type="submit" class="btn btn-primary btn-lg"><i class="bi bi-lock-fill me-1"></i>Submit Report</button>
+        </div>
+    </section>
+</main>
+<script th:src="@{/js/cashier-report.js}" defer></script>
+</body>
+</html>

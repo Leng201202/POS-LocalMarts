@@ -1,0 +1,218 @@
+.report-page {
+    background: #f3f5f7;
+    min-height: 100vh;
+}
+
+.report-page-header {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.report-document {
+    max-width: 1180px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(33, 37, 41, 0.08);
+    overflow: hidden;
+}
+
+.report-document-header {
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 2px solid #212529;
+}
+
+.report-brand {
+    color: #495057;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.report-title {
+    margin: 0.2rem 0 0;
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-weight: 750;
+    letter-spacing: 0.025em;
+}
+
+.report-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.report-state-preview {
+    color: #8a5700;
+    background: #fff8e1;
+}
+
+.report-state-final {
+    color: #146c43;
+    background: #e8f5ee;
+}
+
+.report-meta-grid,
+.report-summary-grid,
+.reconciliation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 2rem;
+}
+
+.report-meta-label,
+.summary-label,
+.reconciliation-label {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.report-meta-value {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.report-section {
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.report-section:last-child {
+    border-bottom: 0;
+}
+
+.report-section-title {
+    margin-bottom: 1.25rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+}
+
+.report-section-kicker {
+    margin-right: 0.4rem;
+    color: #6c757d;
+    font-size: 0.78rem;
+}
+
+.summary-item {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f1f2;
+}
+
+.summary-value {
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+
+.cash-reconciliation {
+    background: #f8fbff;
+    border: 1px solid #b6d4fe;
+    border-radius: 0.65rem;
+    padding: 1.25rem;
+}
+
+.reconciliation-item {
+    min-width: 0;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.reconciliation-value {
+    display: block;
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.difference-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid currentColor;
+}
+
+.report-table {
+    margin-bottom: 0;
+}
+
+.report-table th {
+    color: #495057;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.report-table td {
+    vertical-align: middle;
+}
+
+.report-table .text-break-cell {
+    min-width: 10rem;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.report-detail {
+    border: 1px solid #e9ecef;
+    border-radius: 0.4rem;
+    background: #fafafa;
+}
+
+.report-detail summary {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+}
+
+.report-detail-content {
+    padding: 0 1rem 1rem;
+}
+
+.report-action-area {
+    max-width: 1180px;
+    margin: 1.25rem auto 0;
+}
+
+.report-list-card {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.report-list-table th {
+    white-space: nowrap;
+}
+
+.report-list-table td {
+    vertical-align: middle;
+}
+
+@media (max-width: 767.98px) {
+    .report-document-header,
+    .report-section {
+        padding: 1.25rem;
+    }
+
+    .report-meta-grid,
+    .report-summary-grid,
+    .reconciliation-grid {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+}
