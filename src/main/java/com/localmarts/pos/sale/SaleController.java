@@ -159,7 +159,7 @@ public class SaleController {
                 saleService.findReceipt(id, actorId, isAdmin)
         );
 
-        return "cashier/receipt";
+        return "cashier/report/receipt";
     }
 
     @GetMapping("/refunds")

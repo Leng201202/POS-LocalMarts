@@ -112,7 +112,7 @@ class SaleControllerLoyaltyViewTest {
 
         mockMvc.perform(get("/cashier/sales/9/receipt"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("cashier/receipt"))
+                .andExpect(view().name("cashier/report/receipt"))
                 .andExpect(content().string(containsString("Points Redeemed")))
                 .andExpect(content().string(containsString("50")))
                 .andExpect(content().string(containsString("applied to")))
