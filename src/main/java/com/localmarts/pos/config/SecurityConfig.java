@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/category", "/category/**",
                                 "/audit", "/audit/**",
                                 "/users","/users/**",
+                                "/customer", "/customer/**",
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,
@@ -41,7 +42,6 @@ public class SecurityConfig {
                         .requestMatchers("/inventory", "/inventory/**").hasRole("ADMIN")
                         .requestMatchers("/cashier/reports", "/cashier/reports/**").hasRole("CASHIER")
                         .requestMatchers(
-                                "/customer", "/customer/**",
                                 "/pos/scanner", "/pos/scanner/**",
                                 "/cashier", "/cashier/**"
                         ).hasAnyRole("ADMIN", "CASHIER")

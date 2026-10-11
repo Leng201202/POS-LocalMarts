@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-@WebMvcTest(CashierCustomerController.class)
+@WebMvcTest({CashierCustomerController.class, CustomerController.class})
 @Import(SecurityConfig.class)
 class CashierCustomerControllerTest {
 
