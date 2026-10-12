@@ -3,7 +3,7 @@ spring:
     name: pos
   datasource:
     driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:${user.home}/LocalMartPOS/database/localmart-pos.db
+    url: jdbc:sqlite:${localmart.storage.base-dir}/database/localmart-pos.db
 
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
@@ -28,3 +28,9 @@ server:
     key-store-type: PKCS12
     key-store-password: localmart
     key-alias: pos
+
+localmart:
+  storage:
+    base-dir: ${user.home}/LocalMartPOS
+  browser:
+    url: https://localhost:8080

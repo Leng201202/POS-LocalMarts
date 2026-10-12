@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: demo
+  datasource:
+    url: jdbc:sqlite:${localmart.storage.base-dir}/database/demo.db
+
+server:
+  address: 127.0.0.1
+  ssl:
+    enabled: false
+
+localmart:
+  storage:
+    base-dir: ${user.home}/Library/Application Support/LocalMart POS Demo
+  browser:
+    url: http://127.0.0.1:8080

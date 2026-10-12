@@ -1,38 +1,25 @@
 package com.localmarts.pos;
 
+import com.localmarts.pos.config.ApplicationStorageInitializer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @SpringBootApplication
 @EnableScheduling
 public class PosApplication {
 
-	public static void main(String[] args) throws IOException {
-		createDirectory();
-        SpringApplication.run(PosApplication.class, args);
+    public static void main(String[] args) {
+        SpringApplication application = new SpringApplication(PosApplication.class);
+        application.addInitializers(new ApplicationStorageInitializer());
+        ConfigurableApplicationContext context = application.run(args);
+
         try {
-            new ProcessBuilder("open", "https://localhost:8080").start();
+            String browserUrl = context.getEnvironment().getRequiredProperty("localmart.browser.url");
+            new ProcessBuilder("open", browserUrl).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
-	}
-
-    private static void createDirectory() throws IOException {
-        try {
-            Path basePath = Paths.get(System.getProperty("user.home"), "LocalMartPOS");
-            Files.createDirectories(basePath.resolve("database"));
-            Files.createDirectories(basePath.resolve("backups"));
-            Files.createDirectories(basePath.resolve("exports"));
-            Files.createDirectories(basePath.resolve("logs"));
-            System.out.println("LocalMartPOS folders created at: " + basePath);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create LocalMartPOS folders", e);
-        }
     }
-
 }
