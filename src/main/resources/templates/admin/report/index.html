@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Reports | LocalMart POS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+          rel="stylesheet">
+</head>
+
+
+<body class="bg-light">
+
+
+<nav class="navbar bg-white shadow-sm">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand fw-bold"
+           th:href="@{/admin}">
+            LocalMart POS
+        </a>
+
+
+        <a th:href="@{/admin}"
+           class="btn btn-outline-secondary btn-sm">
+
+            <i class="bi bi-arrow-left me-1"></i>
+            Dashboard
+
+        </a>
+
+    </div>
+</nav>
+
+
+
+<div class="container-fluid px-4 py-4">
+
+
+    <!-- Header -->
+
+    <div class="mb-4">
+
+        <h2 class="fw-bold mb-1">
+            Reports
+        </h2>
+
+        <p class="text-muted mb-0">
+            Analyze sales, profit, and payment performance.
+        </p>
+
+    </div>
+
+
+
+    <!-- Summary Cards -->
+
+    <div class="row g-4 mb-4">
+
+
+        <div class="col-md-3">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Today's Sales
+                            </p>
+
+                            <h3 class="fw-bold">
+                                ฿0.00
+                            </h3>
+
+                        </div>
+
+
+                        <i class="bi bi-cart-check display-6 text-primary"></i>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="col-md-3">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Orders
+                            </p>
+
+                            <h3 class="fw-bold">
+                                0
+                            </h3>
+
+                        </div>
+
+
+                        <i class="bi bi-receipt display-6 text-success"></i>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+        <div class="col-md-3">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body">
+
+
+                    <div class="d-flex justify-content-between">
+
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Gross Profit
+                            </p>
+
+                            <h3 class="fw-bold">
+                                ฿0.00
+                            </h3>
+
+
+                        </div>
+
+
+                        <i class="bi bi-graph-up display-6 text-warning"></i>
+
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+
+
+        <div class="col-md-3">
+
+
+            <div class="card border-0 shadow-sm">
+
+
+                <div class="card-body">
+
+
+                    <div class="d-flex justify-content-between">
+
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Customers
+                            </p>
+
+
+                            <h3 class="fw-bold">
+                                0
+                            </h3>
+
+
+                        </div>
+
+
+                        <i class="bi bi-people display-6 text-danger"></i>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- Report Menu -->
+
+    <div class="row g-4">
+
+
+
+        <!-- Sales Report -->
+
+        <div class="col-lg-4">
+
+
+            <div class="card border-0 shadow-sm h-100">
+
+
+                <div class="card-body">
+
+
+                    <div class="mb-3">
+
+                        <i class="bi bi-receipt-cutoff display-5 text-primary"></i>
+
+                    </div>
+
+
+                    <h5 class="fw-bold">
+                        Sales Report
+                    </h5>
+
+
+                    <p class="text-muted">
+                        View overall sales performance and cashier sales.
+                    </p>
+
+
+                    <div class="d-flex gap-2">
+
+
+                        <a th:href="@{/admin/report/sales}"
+                           class="btn btn-primary">
+
+                            View
+
+                        </a>
+
+
+                        <a th:href="@{/admin/report/sales/export}"
+                           class="btn btn-outline-success">
+
+                            <i class="bi bi-file-earmark-excel"></i>
+
+                            Export
+
+                        </a>
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- Profit Report -->
+
+
+        <div class="col-lg-4">
+
+
+            <div class="card border-0 shadow-sm h-100">
+
+
+                <div class="card-body">
+
+
+                    <div class="mb-3">
+
+                        <i class="bi bi-bar-chart-line display-5 text-success"></i>
+
+                    </div>
+
+
+                    <h5 class="fw-bold">
+                        Profit Report
+                    </h5>
+
+
+                    <p class="text-muted">
+                        Analyze revenue, cost, gross profit, and product performance.
+                    </p>
+
+
+                    <a th:href="@{/admin/report/profit}"
+                       class="btn btn-success">
+
+                        View Profit
+
+                    </a>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- Payment Analysis -->
+
+
+        <div class="col-lg-4">
+
+
+            <div class="card border-0 shadow-sm h-100">
+
+
+                <div class="card-body">
+
+
+                    <div class="mb-3">
+
+                        <i class="bi bi-credit-card display-5 text-warning"></i>
+
+                    </div>
+
+
+                    <h5 class="fw-bold">
+                        Payment Analysis
+                    </h5>
+
+
+                    <p class="text-muted">
+                        Compare payment methods and transaction distribution.
+                    </p>
+
+
+                    <a th:href="@{/admin/report/payment}"
+                       class="btn btn-warning">
+
+                        View Analysis
+
+                    </a>
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+    <!-- Export Section -->
+
+
+    <div class="card border-0 shadow-sm mt-4">
+
+
+        <div class="card-body">
+
+
+            <div class="d-flex justify-content-between align-items-center">
+
+
+                <div>
+
+
+                    <h5 class="fw-bold mb-1">
+                        Export Reports
+                    </h5>
+
+
+                    <p class="text-muted mb-0">
+                        Download reports for accounting and management.
+                    </p>
+
+
+                </div>
+
+
+
+                <div class="d-flex gap-2">
+
+
+                    <button class="btn btn-outline-success">
+
+                        <i class="bi bi-file-earmark-excel me-1"></i>
+                        Excel
+
+                    </button>
+
+
+
+                    <button class="btn btn-outline-danger">
+
+                        <i class="bi bi-file-earmark-pdf me-1"></i>
+                        PDF
+
+                    </button>
+
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+
+</body>
+</html>
