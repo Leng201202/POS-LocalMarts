@@ -14,7 +14,7 @@ spring:
       hibernate:
         format_sql: true
   thymeleaf:
-      cache: false
+    cache: false
   servlet:
     multipart:
       max-file-size: 10MB

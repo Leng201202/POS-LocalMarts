@@ -31,6 +31,10 @@ public class SecurityConfig {
                                 "/loyalty-config", "/loyalty-config/**"
                         ).hasRole("ADMIN")
                         .requestMatchers(
+                                "/cashier/reports",
+                                "/cashier/reports/**"
+                        ).hasRole("CASHIER")
+                        .requestMatchers(
                                 "/inventory", "/inventory/**",
                                 "/customer", "/customer/**",
                                 "/pos/scanner", "/pos/scanner/**",

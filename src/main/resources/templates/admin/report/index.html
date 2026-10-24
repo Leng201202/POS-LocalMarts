@@ -1,467 +1,101 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Reports | LocalMart POS</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
-          rel="stylesheet">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-          rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Reports | LocalMart POS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
-
-
 <body class="bg-light">
-
-
-<nav class="navbar bg-white shadow-sm">
+<nav class="navbar bg-white border-bottom shadow-sm">
     <div class="container-fluid px-4">
-
-        <a class="navbar-brand fw-bold"
-           th:href="@{/admin}">
-            LocalMart POS
+        <a class="navbar-brand fw-bold" th:href="@{/admin}">LocalMart POS</a>
+        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin}">
+            <i class="bi bi-arrow-left me-1"></i>Dashboard
         </a>
-
-
-        <a th:href="@{/admin}"
-           class="btn btn-outline-secondary btn-sm">
-
-            <i class="bi bi-arrow-left me-1"></i>
-            Dashboard
-
-        </a>
-
     </div>
 </nav>
 
-
-
-<div class="container-fluid px-4 py-4">
-
-
-    <!-- Header -->
-
+<main class="container-fluid px-4 py-4">
     <div class="mb-4">
-
-        <h2 class="fw-bold mb-1">
-            Reports
-        </h2>
-
-        <p class="text-muted mb-0">
-            Analyze sales, profit, and payment performance.
-        </p>
-
+        <h2 class="fw-bold mb-1">Admin Reports</h2>
+        <p class="text-muted mb-0">Sales, profitability, cashier performance, and payment insights.</p>
     </div>
 
-
-
-    <!-- Summary Cards -->
-
-    <div class="row g-4 mb-4">
-
-
-        <div class="col-md-3">
-
-            <div class="card border-0 shadow-sm">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-                        <div>
-
-                            <p class="text-muted mb-1">
-                                Today's Sales
-                            </p>
-
-                            <h3 class="fw-bold">
-                                ฿0.00
-                            </h3>
-
-                        </div>
-
-
-                        <i class="bi bi-cart-check display-6 text-primary"></i>
-
-                    </div>
-
+    <div class="card border-success border-2 shadow-sm mb-4">
+        <div class="card-body">
+            <form class="row g-3 align-items-end" th:action="@{/admin/report/export}" method="get">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Export Complete Report</h5>
+                    <p class="text-muted mb-0">One file containing sales, cashier totals, profit, products, and payment analysis.</p>
                 </div>
-
-            </div>
-
+                <div class="col-sm-4 col-lg-2"><label class="form-label fw-semibold" for="exportStart">Start date</label><input class="form-control" id="exportStart" name="start" type="date" th:value="${monthStart}" required></div>
+                <div class="col-sm-4 col-lg-2"><label class="form-label fw-semibold" for="exportEnd">End date</label><input class="form-control" id="exportEnd" name="end" type="date" th:value="${today}" required></div>
+                <div class="col-sm-4 col-lg-2"><label class="form-label fw-semibold" for="exportFormat">Format</label><select class="form-select" id="exportFormat" name="format"><option value="xlsx">Excel (.xlsx)</option><option value="pdf">PDF (.pdf)</option></select></div>
+                <div class="col-sm-4 col-lg-2"><button class="btn btn-success w-100" type="submit"><i class="bi bi-download me-1"></i>Export all</button></div>
+            </form>
         </div>
-
-
-
-        <div class="col-md-3">
-
-            <div class="card border-0 shadow-sm">
-
-                <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
-
-
-                        <div>
-
-                            <p class="text-muted mb-1">
-                                Orders
-                            </p>
-
-                            <h3 class="fw-bold">
-                                0
-                            </h3>
-
-                        </div>
-
-
-                        <i class="bi bi-receipt display-6 text-success"></i>
-
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-
-        <div class="col-md-3">
-
-            <div class="card border-0 shadow-sm">
-
-                <div class="card-body">
-
-
-                    <div class="d-flex justify-content-between">
-
-
-                        <div>
-
-                            <p class="text-muted mb-1">
-                                Gross Profit
-                            </p>
-
-                            <h3 class="fw-bold">
-                                ฿0.00
-                            </h3>
-
-
-                        </div>
-
-
-                        <i class="bi bi-graph-up display-6 text-warning"></i>
-
-
-                    </div>
-
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-
-
-        <div class="col-md-3">
-
-
-            <div class="card border-0 shadow-sm">
-
-
-                <div class="card-body">
-
-
-                    <div class="d-flex justify-content-between">
-
-
-                        <div>
-
-                            <p class="text-muted mb-1">
-                                Customers
-                            </p>
-
-
-                            <h3 class="fw-bold">
-                                0
-                            </h3>
-
-
-                        </div>
-
-
-                        <i class="bi bi-people display-6 text-danger"></i>
-
-
-                    </div>
-
-
-                </div>
-
-
-            </div>
-
-
-        </div>
-
-
     </div>
 
-
-
-
-
-    <!-- Report Menu -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge text-bg-primary">Today</span>
+        <span class="text-muted" th:text="${today}">2026-10-12</span>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <p class="text-muted mb-1">Revenue</p>
+                <h3 class="fw-bold text-primary mb-0" th:text="|฿${#numbers.formatDecimal(todaySales.totalRevenue,1,'COMMA',2,'POINT')}|">฿0.00</h3>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <p class="text-muted mb-1">Transactions</p>
+                <h3 class="fw-bold mb-0" th:text="${todaySales.totalSaleCount}">0</h3>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <p class="text-muted mb-1">Gross Profit</p>
+                <h3 class="fw-bold text-success mb-0" th:text="|฿${#numbers.formatDecimal(todayProfit.grossProfit,1,'COMMA',2,'POINT')}|">฿0.00</h3>
+            </div></div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <p class="text-muted mb-1">Average Sale</p>
+                <h3 class="fw-bold mb-0" th:text="|฿${#numbers.formatDecimal(todaySales.averageSale,1,'COMMA',2,'POINT')}|">฿0.00</h3>
+            </div></div>
+        </div>
+    </div>
 
     <div class="row g-4">
-
-
-
-        <!-- Sales Report -->
-
         <div class="col-lg-4">
-
-
-            <div class="card border-0 shadow-sm h-100">
-
-
-                <div class="card-body">
-
-
-                    <div class="mb-3">
-
-                        <i class="bi bi-receipt-cutoff display-5 text-primary"></i>
-
-                    </div>
-
-
-                    <h5 class="fw-bold">
-                        Sales Report
-                    </h5>
-
-
-                    <p class="text-muted">
-                        View overall sales performance and cashier sales.
-                    </p>
-
-
-                    <div class="d-flex gap-2">
-
-
-                        <a th:href="@{/admin/report/sales}"
-                           class="btn btn-primary">
-
-                            View
-
-                        </a>
-
-
-                        <a th:href="@{/admin/report/sales/export}"
-                           class="btn btn-outline-success">
-
-                            <i class="bi bi-file-earmark-excel"></i>
-
-                            Export
-
-                        </a>
-
-
-                    </div>
-
-
-                </div>
-
-
-            </div>
-
-
+            <div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+                <i class="bi bi-receipt-cutoff display-5 text-primary"></i>
+                <h5 class="fw-bold mt-3">Sales Report</h5>
+                <p class="text-muted">Review overall and per-cashier sales, then export them to Excel.</p>
+                <a class="btn btn-primary" th:href="@{/admin/report/sales}">View sales</a>
+                <a class="btn btn-outline-success" th:href="@{/admin/report/sales/export}"><i class="bi bi-file-earmark-excel me-1"></i>Export</a>
+            </div></div>
         </div>
-
-
-
-
-
-        <!-- Profit Report -->
-
-
         <div class="col-lg-4">
-
-
-            <div class="card border-0 shadow-sm h-100">
-
-
-                <div class="card-body">
-
-
-                    <div class="mb-3">
-
-                        <i class="bi bi-bar-chart-line display-5 text-success"></i>
-
-                    </div>
-
-
-                    <h5 class="fw-bold">
-                        Profit Report
-                    </h5>
-
-
-                    <p class="text-muted">
-                        Analyze revenue, cost, gross profit, and product performance.
-                    </p>
-
-
-                    <a th:href="@{/admin/report/profit}"
-                       class="btn btn-success">
-
-                        View Profit
-
-                    </a>
-
-
-                </div>
-
-
-            </div>
-
-
+            <div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+                <i class="bi bi-graph-up-arrow display-5 text-success"></i>
+                <h5 class="fw-bold mt-3">Profit Report</h5>
+                <p class="text-muted">Track revenue, cost, profit trends, and best-performing products.</p>
+                <a class="btn btn-success" th:href="@{/admin/report/profit}">View profit</a>
+            </div></div>
         </div>
-
-
-
-
-
-
-
-        <!-- Payment Analysis -->
-
-
         <div class="col-lg-4">
-
-
-            <div class="card border-0 shadow-sm h-100">
-
-
-                <div class="card-body">
-
-
-                    <div class="mb-3">
-
-                        <i class="bi bi-credit-card display-5 text-warning"></i>
-
-                    </div>
-
-
-                    <h5 class="fw-bold">
-                        Payment Analysis
-                    </h5>
-
-
-                    <p class="text-muted">
-                        Compare payment methods and transaction distribution.
-                    </p>
-
-
-                    <a th:href="@{/admin/report/payment}"
-                       class="btn btn-warning">
-
-                        View Analysis
-
-                    </a>
-
-
-                </div>
-
-
-            </div>
-
-
+            <div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+                <i class="bi bi-credit-card display-5 text-warning"></i>
+                <h5 class="fw-bold mt-3">Payment Analysis</h5>
+                <p class="text-muted">Compare sale amounts and percentage share by payment type.</p>
+                <a class="btn btn-warning" th:href="@{/admin/report/payment}">View payments</a>
+            </div></div>
         </div>
-
-
     </div>
-
-
-
-
-
-    <!-- Export Section -->
-
-
-    <div class="card border-0 shadow-sm mt-4">
-
-
-        <div class="card-body">
-
-
-            <div class="d-flex justify-content-between align-items-center">
-
-
-                <div>
-
-
-                    <h5 class="fw-bold mb-1">
-                        Export Reports
-                    </h5>
-
-
-                    <p class="text-muted mb-0">
-                        Download reports for accounting and management.
-                    </p>
-
-
-                </div>
-
-
-
-                <div class="d-flex gap-2">
-
-
-                    <button class="btn btn-outline-success">
-
-                        <i class="bi bi-file-earmark-excel me-1"></i>
-                        Excel
-
-                    </button>
-
-
-
-                    <button class="btn btn-outline-danger">
-
-                        <i class="bi bi-file-earmark-pdf me-1"></i>
-                        PDF
-
-                    </button>
-
-
-
-                </div>
-
-
-            </div>
-
-
-        </div>
-
-
-    </div>
-
-
-
-</div>
-
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-
-
+</main>
 </body>
 </html>
