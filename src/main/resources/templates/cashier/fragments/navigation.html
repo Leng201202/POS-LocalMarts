@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<th:block th:fragment="shell(active)">
+    <div class="admin-nav-scrim" data-admin-nav-close></div>
+
+    <aside class="admin-sidebar" aria-label="Cashier navigation">
+        <div class="admin-brand">
+            <span class="admin-brand-mark"><i class="bi bi-shop-window"></i></span>
+            <span>
+                <strong>LocalMart</strong>
+                <small>Cashier workspace</small>
+            </span>
+            <button class="admin-sidebar-close" type="button" aria-label="Close navigation" data-admin-nav-close>
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <nav class="admin-nav">
+            <span class="admin-nav-label">Overview</span>
+            <a th:href="@{/cashier}" th:classappend="${active == 'dashboard'} ? ' active'">
+                <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+            </a>
+
+            <span class="admin-nav-label">Point of sale</span>
+            <a th:href="@{/cashier/sale}" th:classappend="${active == 'checkout'} ? ' active'">
+                <i class="bi bi-cart-plus"></i><span>New sale</span>
+            </a>
+            <a th:href="@{/cashier/sales}" th:classappend="${active == 'sales'} ? ' active'">
+                <i class="bi bi-receipt"></i><span>Sales history</span>
+            </a>
+            <a th:href="@{/cashier/refunds}" th:classappend="${active == 'refunds'} ? ' active'">
+                <i class="bi bi-arrow-counterclockwise"></i><span>Refunds</span>
+            </a>
+            <a th:href="@{/pos/scanner}" th:classappend="${active == 'scanner'} ? ' active'">
+                <i class="bi bi-upc-scan"></i><span>Barcode scanner</span>
+            </a>
+
+            <span class="admin-nav-label">Operations</span>
+            <a th:href="@{/inventory}" th:classappend="${active == 'inventory'} ? ' active'">
+                <i class="bi bi-boxes"></i><span>Inventory</span>
+            </a>
+            <a th:href="@{/cashier/customers}" th:classappend="${active == 'customers'} ? ' active'">
+                <i class="bi bi-person-heart"></i><span>Customers</span>
+            </a>
+            <a th:href="@{/loyalty}" th:classappend="${active == 'loyalty'} ? ' active'">
+                <i class="bi bi-stars"></i><span>Loyalty activity</span>
+            </a>
+            <a sec:authorize="hasRole('CASHIER')"
+               th:href="@{/cashier/reports}"
+               th:classappend="${active == 'reports'} ? ' active'">
+                <i class="bi bi-file-earmark-bar-graph"></i><span>Sale reports</span>
+            </a>
+        </nav>
+
+        <div class="admin-sidebar-footer">
+            <div class="admin-role">
+                <span class="admin-role-icon"><i class="bi bi-person-badge"></i></span>
+                <span><small>Current area</small><strong>Point of sale</strong></span>
+            </div>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="admin-logout" aria-label="Log out" title="Log out">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <header class="admin-mobile-bar">
+        <button type="button" class="admin-menu-button" aria-label="Open navigation" data-admin-nav-open>
+            <i class="bi bi-list"></i>
+        </button>
+        <a th:href="@{/cashier}" class="admin-mobile-brand">
+            <span class="admin-brand-mark"><i class="bi bi-shop-window"></i></span>
+            <strong>LocalMart</strong>
+        </a>
+        <span class="admin-mobile-role">Cashier</span>
+    </header>
+
+    <script th:src="@{/js/admin-shell.js}" defer></script>
+</th:block>
+</body>
+</html>

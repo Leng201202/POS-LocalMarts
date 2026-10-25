@@ -6,8 +6,10 @@
     <title>Admin Reports | LocalMart POS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="admin-body">
+<th:block th:replace="~{admin/fragments/navigation :: shell('reports')}"></th:block>
 <nav class="navbar bg-white border-bottom shadow-sm">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold" th:href="@{/admin}">LocalMart POS</a>

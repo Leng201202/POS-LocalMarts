@@ -41,9 +41,16 @@
             font-weight: 700;
         }
     </style>
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
 
-<body class="bg-light">
+<body class="bg-light" th:classappend="${isAdmin} ? ' admin-body' : ' admin-body cashier-body'">
+<th:block th:if="${isAdmin}">
+    <th:block th:replace="~{admin/fragments/navigation :: shell('loyalty')}"></th:block>
+</th:block>
+<th:block th:unless="${isAdmin}">
+    <th:block th:replace="~{cashier/fragments/navigation :: shell('loyalty')}"></th:block>
+</th:block>
 
 <!-- ================= NAVBAR ================= -->
 

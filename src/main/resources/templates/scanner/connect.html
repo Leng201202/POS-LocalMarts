@@ -28,8 +28,15 @@
         }
         .product-value { font-weight: 600; overflow-wrap: anywhere; }
     </style>
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
-<body>
+<body class="admin-body cashier-body">
+<th:block th:if="${isAdmin}">
+    <th:block th:replace="~{admin/fragments/navigation :: shell('scanner')}"></th:block>
+</th:block>
+<th:block th:unless="${isAdmin}">
+    <th:block th:replace="~{cashier/fragments/navigation :: shell('scanner')}"></th:block>
+</th:block>
 
 <nav class="navbar bg-white shadow-sm">
     <div class="container-fluid px-4">

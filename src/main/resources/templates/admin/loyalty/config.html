@@ -40,9 +40,11 @@
             border-radius: 10px;
         }
     </style>
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
 
-<body class="bg-light">
+<body class="admin-body">
+<th:block th:replace="~{admin/fragments/navigation :: shell('loyalty-config')}"></th:block>
 
 <nav class="navbar navbar-expand-lg bg-white shadow-sm">
     <div class="container-fluid px-4">

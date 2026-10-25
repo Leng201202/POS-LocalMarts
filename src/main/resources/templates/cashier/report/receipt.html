@@ -36,9 +36,11 @@
             }
         }
     </style>
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
 </head>
 
-<body class="bg-light">
+<body class="admin-body cashier-body">
+<th:block th:replace="~{cashier/fragments/navigation :: shell('sales')}"></th:block>
 
 <nav class="navbar bg-white shadow-sm no-print">
     <div class="container-fluid px-4">
