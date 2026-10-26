@@ -140,7 +140,7 @@ cp target/pos-0.0.1-SNAPSHOT.jar target/jpackage-input/ && \
 jpackage \
   --type dmg \
   --name "LocalMart POS" \
-  --app-version "0.0.1" \
+  --app-version "1.0.0" \
   --vendor "LocalMarts" \
   --description "LocalMart Point of Sale" \
   --input target/jpackage-input \
@@ -158,7 +158,7 @@ jpackage \
 Output:
 
 ```text
-target/installer/LocalMart POS-0.0.1.dmg
+target/installer/LocalMart POS-1.0.0.dmg
 ```
 
 Open the DMG and drag **LocalMart POS** into **Applications**. This command creates an unsigned development package, so macOS may require the first launch through **Control-click → Open**. Public distribution should use Apple Developer ID signing and notarization.
@@ -175,7 +175,7 @@ Copy-Item target\pos-0.0.1-SNAPSHOT.jar target\jpackage-input\
 jpackage `
   --type exe `
   --name "LocalMart POS" `
-  --app-version "0.0.1" `
+  --app-version "1.0.0" `
   --vendor "LocalMarts" `
   --description "LocalMart Point of Sale" `
   --input target\jpackage-input `
@@ -194,7 +194,7 @@ jpackage `
 Windows output:
 
 ```text
-target\installer\LocalMart POS-0.0.1.exe
+target\installer\LocalMart POS-1.0.0.exe
 ```
 
 Run the EXE and complete the installation wizard. An unsigned installer may trigger Microsoft Defender SmartScreen; production releases should be signed with a trusted Windows code-signing certificate.
